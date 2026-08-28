@@ -1,0 +1,21 @@
+{
+  "origin": "generated",
+  "probes": [
+    {
+      "question": "What is the minimum supported memory for a developer machine, and what amount is recommended?",
+      "expect": "docs/install.md"
+    },
+    {
+      "question": "Which test runner does the repository's general test helper use?",
+      "expect": "docs/install.md"
+    },
+    {
+      "question": "Where do non-interactive runs send their diagnostic messages by default?",
+      "expect": "docs/install.md"
+    },
+    {
+      "question": "Why would a team keep the DotSlash executable definition in source control?",
+      "expect": "docs/install.md"
+    }
+  ]
+}

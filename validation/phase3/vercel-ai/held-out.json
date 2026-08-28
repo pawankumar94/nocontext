@@ -1,0 +1,21 @@
+{
+  "origin": "generated",
+  "probes": [
+    {
+      "question": "How should provider response fixtures be stored when an unmodified response is too large to commit?",
+      "expect": "contributing/testing.md"
+    },
+    {
+      "question": "What extra option and helper are required when saving a streaming response fixture?",
+      "expect": "contributing/testing.md"
+    },
+    {
+      "question": "What happens in CI if a provider calls getFromApi without making an explicit URL-validation decision?",
+      "expect": "contributing/secure-url-handling.md"
+    },
+    {
+      "question": "Which release mechanism is used to record package changes before the regular release process?",
+      "expect": "contributing/releases.md"
+    }
+  ]
+}

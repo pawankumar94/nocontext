@@ -1,0 +1,21 @@
+{
+  "origin": "generated",
+  "probes": [
+    {
+      "question": "After changing the registry environment values, how do we make the API process pick them up?",
+      "expect": "docs/user/registry-allowlist.md"
+    },
+    {
+      "question": "How can we confirm the custom registry variables were applied when the API container has no shell?",
+      "expect": "docs/user/registry-allowlist.md"
+    },
+    {
+      "question": "When is a Helm-chart function the wrong choice because the workload needs streaming responses?",
+      "expect": "docs/user/function-creation.md"
+    },
+    {
+      "question": "Which operation guide covers restarting an NVCF service and checking that the rollout completed?",
+      "expect": "docs/user/control-plane-operations.md"
+    }
+  ]
+}

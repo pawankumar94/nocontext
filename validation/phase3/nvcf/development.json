@@ -1,0 +1,17 @@
+{
+  "origin": "generated",
+  "probes": [
+    {
+      "question": "Our container image lives in an unsupported internal registry and function creation fails before the image can be pulled. What configuration path should we use?",
+      "expect": "docs/user/registry-allowlist.md"
+    },
+    {
+      "question": "What deployment rule prevents autoscaled instances from pulling different container images over time?",
+      "expect": "docs/user/function-creation.md"
+    },
+    {
+      "question": "Where should a function keep API keys instead of placing them in environment variables?",
+      "expect": "docs/user/function-creation.md"
+    }
+  ]
+}

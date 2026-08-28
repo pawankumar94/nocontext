@@ -1,0 +1,17 @@
+{
+  "origin": "generated",
+  "probes": [
+    {
+      "question": "How can an administrator stop local hook settings from taking effect while still allowing managed hooks?",
+      "expect": "docs/config.md"
+    },
+    {
+      "question": "Which build option should I avoid for ordinary local work because it makes the Rust build larger and slower?",
+      "expect": "docs/install.md"
+    },
+    {
+      "question": "How do I get a plaintext TUI log for one Codex run?",
+      "expect": "docs/install.md"
+    }
+  ]
+}

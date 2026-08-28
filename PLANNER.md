@@ -260,6 +260,14 @@ locked held-out change. Do not begin Phase 4 from the current tree. npm
 distribution is separately blocked by the clean-consumer audit described in
 Phase 3.
 
+**Review material prepared, not yet accepted:**
+`validation/phase3/` pins candidate generated development and held-out probes
+for OpenAI Codex, NVIDIA NVCF, and Vercel AI SDK. Each source checkout and
+navigation surface is recorded there. The review log is deliberately blank:
+these questions cannot count as evidence until an independent human reviewer
+accepts or rejects them without seeing the evaluated surface. No surface
+rewrite or held-out comparison has been performed yet.
+
 ## 6. Build order
 
 Each phase has three parts: what to build, what evidence it must produce, and

@@ -1,0 +1,17 @@
+{
+  "origin": "generated",
+  "probes": [
+    {
+      "question": "A URL returned by a provider response may be attacker-controlled. What validation setting should the fetch use?",
+      "expect": "contributing/secure-url-handling.md"
+    },
+    {
+      "question": "How do we safely allow a response URL that points back to a configured private self-hosted endpoint?",
+      "expect": "contributing/secure-url-handling.md"
+    },
+    {
+      "question": "What test coverage should a contributor run manually for a new text-generation feature?",
+      "expect": "contributing/testing.md"
+    }
+  ]
+}
