@@ -19,8 +19,8 @@ between them is caused by the index alone.
 finding this tool exists to measure. Identical content, very different
 reachability.
 
-`stuffed-index` is the adversary. It should score well lexically and
-flat semantically, and the run should emit a keyword-stuffing warning.
+`stuffed-index` is the adversary. It copies probe questions into their
+expected entries and must emit a direct probe-leakage warning.
 If a change ever lets this corpus pass clean, the change is wrong.
 
 `no-index` exercises the implicit-surface path, where the file tree is

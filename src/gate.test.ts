@@ -13,6 +13,8 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { analyze } from "./core/analyze.js";
 import { fileSystemSource } from "./sources/filesystem.js";
+import { lexical } from "./core/retrievers/lexical.js";
+import { semantic } from "./retrievers/semantic.js";
 import type { Probe, Run } from "./core/types.js";
 
 const ROOT = join(import.meta.dirname, "..", "examples");
@@ -24,7 +26,7 @@ async function run(variant: string): Promise<Run> {
     probes: { question: string; expect: string }[];
   };
   const probes: Probe[] = raw.probes.map((p) => ({ ...p, origin: "fixture" }));
-  return analyze(fileSystemSource(dir), { probes });
+  return analyze(fileSystemSource(dir), { probes, retrievers: [lexical, semantic] });
 }
 
 const runs = new Map<string, Run>();
@@ -35,6 +37,23 @@ test("all variants report the same ceiling", () => {
   assert.equal(new Set(ceilings).size, 1,
     `ceilings diverged: ${VARIANTS.map((v, i) => `${v}=${ceilings[i]}`).join(" ")}. ` +
     "The documents are byte-identical, so this is a bug in the implementation.");
+});
+
+test("semantic retrieval is present, pinned, and sees the same ceiling", () => {
+  const measurements = VARIANTS.map((variant) => runs.get(variant)!.semantic);
+  assert.ok(measurements.every(Boolean), "semantic retrieval did not run without an API key");
+  assert.ok(measurements.every((measurement) => measurement!.retriever.includes("+751bff3")),
+    "semantic result does not carry the pinned model revision");
+  assert.equal(new Set(measurements.map((measurement) => measurement!.ceiling.p1)).size, 1,
+    "semantic ceilings diverged across byte-identical documents");
+});
+
+test("semantic retrieval also prefers the honest retrieval index", () => {
+  assert.ok(
+    runs.get("retrieval-index")!.semantic!.observed.p1 >
+      runs.get("human-index")!.semantic!.observed.p1,
+    "retrieval-oriented descriptions did not improve semantic routing",
+  );
 });
 
 test("all variants see the same corpus", () => {
@@ -60,14 +79,27 @@ test("no index scores worst", () => {
   }
 });
 
-test("a stuffed index beats an honest one lexically, and nothing yet catches it", () => {
+test("a probe-leaked index is rejected instead of rewarded", () => {
   const stuffed = runs.get("stuffed-index")!;
   assert.ok(stuffed.lexical.observed.p1 > runs.get("retrieval-index")!.lexical.observed.p1,
     "the stuffed corpus is meant to game BM25; if it stopped, it stopped being an adversary");
-  // Documents the current hole rather than asserting it is fine. The semantic
-  // retriever in phase 3 is what closes it, and this flips to an assertion then.
   assert.equal(
-    stuffed.warnings.some((w) => w.kind === "keyword-stuffing"), false,
-    "a stuffing warning fired without a semantic retriever, which cannot be right",
+    stuffed.warnings.some((w) => w.kind === "probe-leakage"), true,
+    "the adversarial surface copied the evaluation questions and was not rejected",
   );
+});
+
+test("an honest retrieval index does not trip the leakage warning", () => {
+  assert.equal(
+    runs.get("retrieval-index")!.warnings.some((w) => w.kind === "probe-leakage"), false,
+    "retrieval-oriented descriptions were mistaken for copied evaluation questions",
+  );
+});
+
+test("semantic retrieval does not invent evidence for blank navigation entries", async () => {
+  const ranked = await semantic.rank("deployment rollback", [
+    { docId: "linked.md", text: "Deployment and rollback procedure" },
+    { docId: "unlinked.md", text: "" },
+  ]);
+  assert.deepEqual(ranked, ["linked.md"]);
 });

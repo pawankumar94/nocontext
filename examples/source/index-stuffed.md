@@ -5,9 +5,9 @@ title: Operations handbook
 
 | Document | Covers |
 |---|---|
-| [Deployment policy](docs/deploy-policy.md) | rollout traffic migration deploy rollback incident stage window minutes percent owner online approval schema boot production release verify order |
-| [On-call rotation](docs/oncall.md) | rotation handover primary secondary pager keyboard swap roster channel week lead cover shift approval backstop minutes expected |
-| [Data retention](docs/data-retention.md) | retention records years logs traces hot cold archive deletion requests days backups storage payload statutory termination contract |
-| [API rate limits](docs/rate-limits.md) | requests minute account burst seconds ceiling 429 retry after throttled harder enterprise negotiate tenant budget noisy exhaust limit |
-| [Incident severity](docs/incident-severity.md) | sev severity outage data loss pages oncall commander hours business degraded workaround internal cosmetic ticket declares raised lowered open |
-| [Billing and invoicing](docs/billing.md) | invoice business day month due days usage overage arrears unit rate free tier allowance annual upfront proration upgrade downgrade renewal refund |
+| [Deployment policy](docs/deploy-policy.md) | Do migrations run before or after the app deploy? How long do we hold at 5% before going full? Can I skip the staged rollout during an outage? Who has to stay online while a release is going out? |
+| [On-call rotation](docs/oncall.md) | What day does the pager change hands? If I'm secondary do I need to be at my desk? Can I swap a shift without asking anyone? |
+| [Data retention](docs/data-retention.md) | How long do we keep customer data after they leave? Someone asked us to delete their data, how long do we have? Are traces backed up anywhere? |
+| [API rate limits](docs/rate-limits.md) | Why am I getting 429s? What happens if I keep retrying immediately? Is the quota per tenant or for the whole account? |
+| [Incident severity](docs/incident-severity.md) | Does a degraded service page anyone at 3am? Can we downgrade an incident once it's open? Is data loss automatically the highest severity? |
+| [Billing and invoicing](docs/billing.md) | When do invoices go out and when are they due? What happens if I go over my allowance on the free plan? Do I get money back if I downgrade halfway through the year? |
