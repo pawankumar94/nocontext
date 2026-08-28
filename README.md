@@ -3,47 +3,70 @@
 </p>
 
 <h1 align="center">nocontext</h1>
-<p align="center"><strong>A retrieval-quality linter for the agent-facing maps in AGENTS.md, CLAUDE.md, and your docs.</strong></p>
+<p align="center"><strong>A retrieval-quality linter for AGENTS.md, CLAUDE.md, and the docs your coding agent reads before it reads anything else.</strong></p>
 
 <p align="center">
-  <a href="docs/METHOD.md"><img alt="method: published before results" src="https://img.shields.io/badge/method-published%20before%20results-E07B39"></a>
-  <img alt="status: unvalidated, see below" src="https://img.shields.io/badge/status-unvalidated-9AA0A6">
+  <img alt="status: pre-v1, CLI only" src="https://img.shields.io/badge/status-pre--v1%2C%20CLI%20only-9AA0A6">
+  <a href="docs/METHOD.md"><img alt="method published before results" src="https://img.shields.io/badge/method-published%20before%20results-E07B39"></a>
   <img alt="license: MIT" src="https://img.shields.io/badge/license-MIT-9AA0A6">
+</p>
+
+<p align="center">
+  <a href="#quickstart">Quickstart</a> ·
+  <a href="#project-status">Status</a> ·
+  <a href="#usage">Usage</a> ·
+  <a href="#integrations">Integrations</a> ·
+  <a href="#how-scoring-works">Scoring</a> ·
+  <a href="#roadmap-to-v1">Roadmap</a>
 </p>
 
 ---
 
-## The problem
+## What this is
 
-Coding agents use `AGENTS.md`, `CLAUDE.md`, READMEs, and docs indexes as maps
-before they open the documents those maps point to. A map can contain the right
-links and still fail to route a working question to the source that answers it.
+Coding agents read a map before they read anything else — `AGENTS.md`,
+`CLAUDE.md`, a docs index — to decide which file answers a given question. A
+map can list the right file and still fail to route a real question to it.
 
-You write your index the way you'd explain the project to a colleague:
-*"what must be true before a production rollout."* A contributor asks
-*"do migrations run before or after the deploy?"* If the map does not route
-that question to the document, a retriever misses it. An agent may explore past
-the miss, or may not. Phase 4 tests that boundary.
+You write that map the way you'd explain the project to a colleague: *"what
+must be true before a production rollout."* A contributor asks *"do
+migrations run before or after the deploy?"* If the map's wording doesn't
+route that question to the right file, the agent misses it — sometimes
+silently, sometimes not; see [Project status](#project-status) for what's
+actually proven about that.
 
-`nocontext` makes those routing mismatches measurable before you revise the
-navigation surface. Whether that changes an agent's grounding or exploration
-cost is the Phase 4 question this project has not answered yet.
+`nocontext` measures the routing gap directly: point it at a corpus and a set
+of real questions, and it reports whether your map gets an agent to the
+right document, using the same retrieval metrics published research on agent
+context-acquisition uses (P@1, MRR, Recall@k — see
+[How scoring works](#how-scoring-works)).
 
-## Agent-native is the destination
+## Project status
 
-The CLI is the current measurement surface. The intended product is a small
-agent-native check that a maintainer can add to the coding agents they already
-use: first as an MCP server, then as agent skills where those clients support
-them. Claude Code, Codex, Cursor, and other MCP-capable clients are the target
-environment.
+**Read this before anything else below.** `nocontext` is pre-v1. Here's
+exactly what that means, so you can decide if it's useful to you today.
 
-Those integrations do **not** ship today. They are Phase 5 work, deliberately
-gated on Phase 4 showing that better routing changes grounding or exploration
-cost in a real access condition. Until then, the CLI is a lab tool for proving
-the workflow, not a plugin presented as ready for installation.
+| | |
+|---|---|
+| **What works** | A CLI that scores a real corpus against real questions, with lexical (BM25) and optional local semantic (MiniLM) retrieval, diagnose/evaluate modes, and before/after comparison. [38 tests](.github/workflows/ci.yml) passing. |
+| **What's proven** | On a corpus built to isolate the effect: rewriting a navigation surface in retrieval-friendly vocabulary measurably improves routing, same documents, same questions. [`examples/`](examples/) is the controlled experiment — rerun it yourself. |
+| **What's *not* proven yet** | That a better `nocontext` score causes an agent to actually ground more answers, or explore less, on real tasks. That's [Phase 4](PLANNER.md#phase-4--prove-the-score-predicts-something-real) — a preregistered study, not started. Treat every score today as a routing diagnostic, not a validated agent-performance predictor. |
+| **Coding-agent integrations** | **None exist yet.** No MCP server, no Cursor/Codex/Claude Code/Hermes plugin, no GitHub Action, no npm package. `nocontext` is a CLI you clone, build, and run by hand. See [Integrations](#integrations) for exactly what's planned and why none of it ships today. |
+
+If you want a tool that plugs into your coding agent right now, this isn't
+that yet. If you want to measure whether your `AGENTS.md` actually routes the
+questions your contributors ask, that works today — see [Quickstart](#quickstart).
+
+## Quickstart
+
+```bash
+git clone https://github.com/pawankumar94/nocontext && cd nocontext
+npm ci && npm run build
+node dist/surfaces/cli.js examples/retrieval-index
+```
 
 ```text
-$ nocontext examples/retrieval-index --evaluate
+$ node dist/surfaces/cli.js examples/retrieval-index --evaluate
 
   evaluate run · surface: index.md
   lexical  bm25@1.0.0
@@ -57,146 +80,132 @@ $ nocontext examples/retrieval-index --evaluate
   full-text reference   95% P@1
 ```
 
-This is a shortened excerpt of the real output. The command also prints the
-random floor, MRR, Recall@3, Recall@5, individual misses, warnings, and the
-exact retriever versions.
+Real output from a real run against a bundled example corpus — not a mockup.
+The full output also includes the random floor, MRR, Recall@3, Recall@5,
+individual misses, warnings, and exact retriever versions.
 
-That's the real output of a real, working command against one of the bundled
-example corpora (`examples/retrieval-index/`). It is not a mockup. See
-[the honesty section](#how-honest-is-this-right-now) below for exactly what
-this result does and doesn't prove yet.
+Not on npm yet. Once it is, this becomes `npx nocontext ./docs`.
 
-## Why this and not another OKF/RAG tool
+## Usage
 
-Instruction-file linters and repository-readiness tools check structure,
-freshness, overlap, and task compliance. Some also run agents against harvested
-tasks. `nocontext` stays narrower: it tests whether a real question routes
-through a chosen documentation surface to the source that answers it, then
-identifies vocabulary gaps that can be checked on held-out questions.
-
-`nocontext` does not require a new knowledge format or separate documentation
-system. It reads the files your agent already uses: `AGENTS.md`, `CLAUDE.md`,
-`README.md`, and `docs/`. You do need reviewed questions, because a routing
-score without credible questions is not useful. The future MCP and skill
-surfaces should keep that workflow close to the agent, rather than making it a
-separate dashboard.
-
-## Install
+Point it at your own repository. You need reviewed questions — a routing
+score without credible questions isn't useful; see the
+[probe workflow](docs/PROBES.md) for how to write and review them.
 
 ```bash
-git clone https://github.com/pawankumar94/nocontext && cd nocontext
-npm ci && npm run build
-node dist/surfaces/cli.js examples/retrieval-index
-```
-
-That runs against one of the bundled example corpora. On your own repository,
-choose the navigation surface and provide reviewed probes:
-
-```bash
+# Diagnose: see source-grounded vocabulary gaps, using development questions
 node dist/surfaces/cli.js . --surface AGENTS.md \
   --include docs --include CONTRIBUTING.md \
   --questions development.json --diagnose
+
+# Evaluate: score held-out questions without leaking edit suggestions
 node dist/surfaces/cli.js . --surface AGENTS.md \
   --include docs --include CONTRIBUTING.md \
-  --questions held-out.json --evaluate
+  --questions held-out.json --evaluate --json > before.json
+
+# After revising AGENTS.md, compare against the baseline
+node dist/surfaces/cli.js . --surface AGENTS.md \
+  --include docs --include CONTRIBUTING.md \
+  --questions held-out.json --evaluate --baseline before.json
 ```
 
-Save the first evaluation with `--json`, then pass it back with
-`--baseline before.json` after revising the surface. Incompatible runs are
-rejected instead of producing a misleading delta.
+| flag | does |
+|---|---|
+| `--surface <file>` | navigation file to score, e.g. `AGENTS.md`. Auto-detects `AGENTS.md` → `CLAUDE.md` → `index.md` → `README.md` if omitted. |
+| `--include <path>` | document file or directory to include in the corpus. Repeatable. Scope large monorepos with this. |
+| `--questions <file>` | reviewed probes. Required — see [`docs/PROBES.md`](docs/PROBES.md). |
+| `--diagnose` | shows source-grounded edit suggestions from development questions. Cannot drive a CI threshold. |
+| `--evaluate` | scores held-out questions, never leaks suggestions. Default mode. |
+| `--baseline <file>` | compares this evaluate run against a prior `--json` run. Rejects incompatible comparisons instead of producing a misleading delta. |
+| `--fail-under <pct>` | exit 1 when lexical P@1 falls below this. Evaluate mode only. |
+| `--json` | full run record: probes, per-probe outcomes, retriever versions. |
 
-Lexical scoring (`bm25`) has zero dependencies beyond Node and audits clean.
-Verify with `npm audit` after installing. Semantic scoring is an **explicit
-opt-in**: run `npm install @huggingface/transformers` yourself, and the first
-run then downloads the pinned local MiniLM model. No API key, no document
-content leaves the machine. Skip that install and `nocontext` still runs;
-semantic results are simply absent, with a warning saying why and how to add
-them. See [CONTRIBUTING.md](CONTRIBUTING.md#the-optional-semantic-dependency)
-for why this is opt-in rather than bundled by default.
+If no navigation surface exists at all, the file tree is scored and labelled
+an implicit surface — not silently compared 1:1 against a corpus that has a
+real index.
 
-Follow the [probe workflow](docs/PROBES.md) and read the
-[measurement method](docs/METHOD.md#where-probe-questions-come-from) before
-trusting a score.
+**Semantic scoring is opt-in.** `npm install @huggingface/transformers`
+yourself; the first run then downloads a pinned local MiniLM model, no API
+key, no document content leaves the machine. Skip it and `nocontext` still
+runs lexical-only, with a warning naming the missing package. It's opt-in
+because that dependency's current release carries real transitive advisories
+— see [CONTRIBUTING.md](CONTRIBUTING.md#the-optional-semantic-dependency) for
+the full reasoning and why the base install audits clean.
 
-Not yet on npm. `npx nocontext ./docs` is the target once it is.
+## Integrations
 
-## How honest is this right now
+None of the below exist today. This table is the plan, not a feature list —
+see [Roadmap to v1](#roadmap-to-v1) for what has to happen first.
 
-Say plainly what is and isn't proven, because a measurement tool that oversells
-itself is worthless.
+| surface | target clients | status |
+|---|---|---|
+| MCP server | Claude Code, Cursor, Codex, any MCP-capable client | not started — Phase 5 |
+| Agent skill | clients with skill/tool support (Claude Code, others) | not started — Phase 5 |
+| GitHub Action | CI, any repo | not started — Phase 5 |
+| npm package | `npx nocontext` anywhere | not started — Phase 5 |
+| Hermes Agent | file-aware context model | not evaluated |
 
-**Demonstrated:** on a hand-built corpus designed specifically to show the
-effect, an index written in retrieval-friendly vocabulary scores meaningfully
-higher than the same content indexed the way a person would summarise it. Same
-documents, same probes, only the wording of the index changed. That's the
-mechanism, isolated. [`examples/`](examples/) is the controlled experiment and
-you can rerun it yourself.
+Why none of this ships yet: every integration surface is a thin adapter over
+one function, `analyze(source, options)` — see
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — so building them isn't the
+blocker. Shipping them before Phase 4 tests whether a better score actually
+helps an agent would mean distributing a claim we haven't tested, into tools
+people trust for real work. See [Roadmap to v1](#roadmap-to-v1).
 
-**Not yet demonstrated:** that a higher `nocontext` score predicts better
-context acquisition, or that rewriting a navigation surface causes an agent to
-ground more answers or use less exploration on real tasks. That paired test is
-[Phase 4 in the planner](PLANNER.md#phase-4--prove-the-score-predicts-something-real).
-Nothing here should be trusted as a product claim until it passes.
+## How scoring works
 
-If you're the kind of person who wants to see a tool prove itself before
-trusting it: that's the position we're in too. Watch that phase, not this
-README.
-
-## How it scores
-
-Standard IR metrics: P@1, MRR, Recall@{1,3,5}. They are the same ones
-[ContextBench](https://arxiv.org/abs/2602.05892) and
-[Agent Retrieval Bench](https://arxiv.org/html/2607.24882v1) report, not a
-scale invented for this project. See [`docs/METHOD.md`](docs/METHOD.md) for
-why, and for where this sits relative to those two benchmarks. Short version:
-they fix the repository and vary the retriever; we fix the retriever and vary
-the navigation surface, which neither of them measures.
-
-Every run reports three conditions, never one number alone:
+Every run reports three numbers, never one alone — a bare percentage is
+unreadable without knowing what it's relative to:
 
 | | |
 |---|---|
-| **Floor** | a random ranking would score this. Shrinks as corpus size grows. |
-| **Observed** | routing using only the index (or file tree, if there is none) |
-| **Full-text reference** | routing with full document bodies available, same retriever |
+| **Floor** | what a random ranking would score. Shrinks as the corpus grows. |
+| **Observed** | routing using only your index (or file tree, if none exists) |
+| **Full-text reference** | routing with entire documents available, same retriever |
 
-A bare percentage is unreadable without the corpus size behind it: 60% P@1 on
-3 documents is barely above chance, on 200 it's remarkable. The signed
-difference between observed and the full-text reference is a routing measure,
-not an agent-grounding score.
+The gap between observed and the full-text reference is what a navigation
+rewrite can fix. Metrics are P@1, MRR, and Recall@{1,3,5} — the same ones
+[ContextBench](https://arxiv.org/abs/2602.05892) and
+[Agent Retrieval Bench](https://arxiv.org/html/2607.24882v1) report, not a
+scale invented for this project. Those two benchmarks fix the repository and
+vary the retriever or agent; `nocontext` fixes the retriever and varies the
+navigation surface, which neither of them measures. Full reasoning, including
+five objections to this methodology with direct answers, in
+[`docs/METHOD.md`](docs/METHOD.md).
 
-## Can I game it?
+**Can this be gamed?** Yes — BM25 rewards copied query vocabulary, and the
+first embedding experiment showed semantic retrieval doesn't reliably catch
+that either. `nocontext` detects direct probe leakage and keeps diagnose and
+evaluate modes separate, but doesn't claim to catch every optimized index.
+[`examples/stuffed-index/`](examples/stuffed-index) is the committed
+adversary this has to keep catching.
 
-Yes. BM25 rewards copied query vocabulary, and the first embedding experiment
-showed that semantic retrieval does not reliably expose the same attack. The
-tool catches direct probe leakage, reports lexical and semantic results
-separately, and keeps diagnosis apart from held-out evaluation. It does not
-claim that these controls detect every optimized index.
+## Roadmap to v1
 
-[`examples/stuffed-index/`](examples/stuffed-index) is the committed adversary.
-It copies probe questions into their expected entries and must trigger the
-leakage warning without making the honest retrieval index fail.
+Full detail, evidence requirements, and kill criteria per phase: [`PLANNER.md`](PLANNER.md).
 
-## What it works on
+- [x] **Phase 1–2** — core measurement, CLI, reporting
+- [~] **Phase 3** — anti-gaming, diagnose/evaluate workflow. Built and
+      tested; the human blind review of validation probes
+      ([in progress](validation/phase3/README.md)) is the remaining gate.
+- [ ] **Phase 4** — prove a better score changes agent grounding or
+      exploration cost on real tasks. Preregistered, not started. **This is
+      the phase that decides what v1 is allowed to claim**, and it's
+      explicitly allowed to fail — see the kill criterion in `PLANNER.md`.
+- [ ] **Phase 5** — MCP server, GitHub Action, skill manifest, npm publish.
+      Gated on Phase 4, not on engineering effort.
 
-Any Markdown corpus an agent reads: `AGENTS.md`, `CLAUDE.md`, a `docs/` folder,
-a wiki export, an OKF bundle, or runbooks. Auto-detection prefers `AGENTS.md`,
-then `CLAUDE.md`, `index.md`, and `README.md`; `--surface` makes the choice
-explicit. Repeat `--include` to exclude unrelated monorepo Markdown from the
-corpus. If no surface exists, the file tree is scored and labelled as an
-implicit surface.
+There is no committed date. Phase 4 is a real empirical study, not a task
+with a fixed size, and its outcome determines whether v1 ships as "measures
+whether agents ground their answers" or a narrower "routing diagnostic for
+your instruction files," per the pre-committed branches in `PLANNER.md`.
 
-## Building on this
+## Contributing
 
-[`PLANNER.md`](PLANNER.md) has the full build plan: every phase, what evidence
-each one has to produce, and the explicit criteria for passing or killing it.
-[`AGENTS.md`](AGENTS.md) is the short version for coding agents joining this
-repo. [`docs/METHOD.md`](docs/METHOD.md) is the methodology, written to be
-attacked. Read it before trusting any number this tool prints.
-
-If you have a corpus where `nocontext` gives an obviously wrong answer, that's
-the single most useful issue you could open. See
-[`CONTRIBUTING.md`](CONTRIBUTING.md).
+The most valuable contribution is a corpus that proves a score wrong, or an
+argument that the methodology is unsound — see
+[`CONTRIBUTING.md`](CONTRIBUTING.md) and [`docs/METHOD.md`](docs/METHOD.md),
+which is written to be attacked.
 
 ## License
 
