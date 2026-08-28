@@ -4,7 +4,7 @@
   "description": "Measures whether an agent can actually reach the right document in your corpus.",
   "type": "module",
   "bin": {
-    "nocontext": "./dist/cli.js"
+    "nocontext": "./dist/surfaces/cli.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -42,5 +42,15 @@
   "devDependencies": {
     "@types/node": "^22.10.2",
     "typescript": "^5.7.2"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./sources": {
+      "types": "./dist/sources/filesystem.d.ts",
+      "import": "./dist/sources/filesystem.js"
+    }
   }
 }

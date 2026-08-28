@@ -108,3 +108,35 @@ export function ungroundedRate(m: Measurement): number {
 export function reachableGap(m: Measurement): number {
   return Math.max(0, m.ceiling - m.observed);
 }
+
+/**
+ * Where documents come from.
+ *
+ * The core never touches a filesystem. Every surface this tool will grow into
+ * supplies documents differently: a CLI walks a directory, an MCP server is
+ * handed them in memory, a CI action reads a checkout, a hosted runner pulls
+ * from a git provider, a browser has no filesystem at all.
+ *
+ * Binding the analysis to `node:fs` would make each of those a rewrite rather
+ * than an adapter, so it is an interface from the first commit.
+ */
+export interface CorpusSource {
+  readonly name: string;
+  /** Document ids, corpus-root-relative, stable across calls. */
+  list(): Promise<string[]>;
+  /** Raw file contents, frontmatter included. */
+  read(id: string): Promise<string>;
+  /** The index file if the corpus has one. Undefined means implicit surface. */
+  indexPath?(): Promise<string | undefined>;
+}
+
+export interface AnalyzeOptions {
+  /** Real queries beat generated ones. See METHOD.md. */
+  probes?: Probe[];
+  /** Defaults to lexical only, which needs no network and no key. */
+  retrievers?: Retriever[];
+  /** Probes generated per document when none are supplied. */
+  probesPerDoc?: number;
+  /** Progress for long runs. Surfaces decide how to display it, core never prints. */
+  onProgress?: (event: { phase: string; done: number; total: number }) => void;
+}
