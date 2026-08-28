@@ -1,25 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" font-family="Inter, system-ui, -apple-system, sans-serif">
   <rect width="1280" height="640" fill="#16181D"/>
-  <g transform="translate(96 176) scale(1.55)"><rect x="3.52" y="3.52" width="24.96" height="24.96" rx="5.49" fill="#E07B39"/>
-  <rect x="35.52" y="3.52" width="24.96" height="24.96" rx="5.49" fill="#E07B39"/>
-  <rect x="69.14" y="5.14" width="21.72" height="21.72" rx="3.87" fill="none" stroke="#9AA0A6" stroke-width="3.24"/>
-  <rect x="3.52" y="35.52" width="24.96" height="24.96" rx="5.49" fill="#E07B39"/>
-  <rect x="37.14" y="37.14" width="21.72" height="21.72" rx="3.87" fill="none" stroke="#9AA0A6" stroke-width="3.24"/>
-  <rect x="67.52" y="35.52" width="24.96" height="24.96" rx="5.49" fill="#E07B39"/>
-  <rect x="5.14" y="69.14" width="21.72" height="21.72" rx="3.87" fill="none" stroke="#9AA0A6" stroke-width="3.24"/>
-  <rect x="35.52" y="67.52" width="24.96" height="24.96" rx="5.49" fill="#E07B39"/>
-  <rect x="67.52" y="67.52" width="24.96" height="24.96" rx="5.49" fill="#E07B39"/></g>
-  <text x="96" y="410" fill="#FBFAF8" font-size="76" font-weight="680" letter-spacing="-2.4">nocontext</text>
-  <text x="96" y="462" fill="#9AA0A6" font-size="25" font-weight="420">Your agent will answer with nothing behind it. This tells you how often.</text>
-  <g transform="translate(760 168)" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">
-    <text x="0" y="0"   fill="#9AA0A6"   font-size="21">ungrounded rate</text>
-    <text x="330" y="0" fill="#E07B39" font-size="21" text-anchor="end" font-weight="600">43%</text>
-    <line x1="0" y1="24" x2="330" y2="24" stroke="#2C3038"/>
-    <text x="0" y="62"  fill="#9AA0A6" font-size="19">floor</text>
-    <text x="330" y="62" fill="#9AA0A6" font-size="19" text-anchor="end">8%</text>
-    <text x="0" y="98"  fill="#9AA0A6" font-size="19">observed</text>
-    <text x="330" y="98" fill="#FBFAF8" font-size="19" text-anchor="end">57%</text>
-    <text x="0" y="134" fill="#9AA0A6" font-size="19">ceiling</text>
-    <text x="330" y="134" fill="#FBFAF8" font-size="19" text-anchor="end">92%</text>
+
+  <!-- an assertion, and a citation with nothing behind it -->
+  <rect x="96" y="150" width="430" height="15" rx="7.5" fill="#9AA0A6" opacity=".55"/>
+  <rect x="96" y="186" width="372" height="15" rx="7.5" fill="#9AA0A6" opacity=".55"/>
+  <rect x="96" y="222" width="366" height="15" rx="7.5" fill="#9AA0A6" opacity=".55"/>
+  <rect x="96" y="258" width="376" height="15" rx="7.5" fill="#9AA0A6" opacity=".55"/>
+  <g stroke="#E07B39" stroke-width="7.9" fill="none" stroke-linecap="square"><path d="M505.0 235.6 H493.1 V296.4 H505.0"/><path d="M527.0 235.6 H538.9 V296.4 H527.0"/></g>
+
+  <text x="96" y="392" fill="#FBFAF8" font-size="78" font-weight="680" letter-spacing="-2.6">nocontext</text>
+  <text x="96" y="444" fill="#9AA0A6" font-size="24" font-weight="420">Your agent will answer with nothing behind it. This tells you how often.</text>
+  <text x="96" y="486" fill="#E07B39" font-size="19" font-weight="500" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">github.com/pawankumar94/nocontext</text>
+
+  <g transform="translate(830 172)" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">
+    <text x="0" y="0" fill="#9AA0A6" font-size="20">ungrounded rate</text>
+    <text x="300" y="0" fill="#E07B39" font-size="20" text-anchor="end" font-weight="600">43%</text>
+    <line x1="0" y1="24" x2="300" y2="24" stroke="#2C3038"/>
+    <text x="0" y="62" fill="#9AA0A6" font-size="18">floor</text>
+    <text x="300" y="62" fill="#9AA0A6" font-size="18" text-anchor="end">8%</text>
+    <text x="0" y="96" fill="#9AA0A6" font-size="18">observed</text>
+    <text x="300" y="96" fill="#FBFAF8" font-size="18" text-anchor="end">57%</text>
+    <text x="0" y="130" fill="#9AA0A6" font-size="18">ceiling</text>
+    <text x="300" y="130" fill="#FBFAF8" font-size="18" text-anchor="end">92%</text>
   </g>
 </svg>

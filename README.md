@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/logo.svg" width="96" alt="nocontext">
+  <img src="docs/assets/logo.svg" width="76" alt="nocontext">
 </p>
 
 <h1 align="center">nocontext</h1>
@@ -45,6 +45,9 @@ $ npx nocontext ./docs          # intended output, not yet runnable
 
 That gap is the finding. The corpus knows the answer. The navigation surface
 does not expose it.
+
+Ungrounded results are marked `[ ]` in output, which is also the mark: a
+citation with nothing behind it.
 
 ## Install
 
