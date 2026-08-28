@@ -57,6 +57,14 @@ For Vercel, repeat `--include contributing --include architecture`. Save the
 resulting JSON beside a dated, local experiment record;
 do not commit an edited copy of a third-party corpus here.
 
+## Agent-assisted pre-review
+
+An agent fact-checked all 36 probes against the pinned source commits and
+found none factually wrong, unanswerable, or trivia. Full record:
+[`agent-review-2026-08-28.md`](agent-review-2026-08-28.md). **This is not the
+review this packet requires** — it is a verification pass, not the human
+blind judgment below, and it does not substitute for filling this log.
+
 ## Blind-review log
 
 | corpus | file | accepted | rejected | reviewer | date |

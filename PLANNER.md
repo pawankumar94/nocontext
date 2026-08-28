@@ -353,7 +353,7 @@ this phase is trusted for Phase 5 distribution.
 | `examples/retrieval-index` does **not** trip leakage detection | false-positive check, same test file |
 | Semantic retriever runs with no API key and does not crash the CLI | manual run with key unset |
 | Semantic output improves an honest retrieval surface without claiming the stuffed surface stays flat | the measured result replaced the assumption |
-| At least 20 host-agent-generated probes across 3 real corpora pass blind human review | no template generator and no bundled fixture used for this gate |
+| At least 20 host-agent-generated probes across 3 real corpora pass blind human review | **not yet met.** An agent-assisted fact-check (`validation/phase3/agent-review-2026-08-28.md`) verified all 36 candidate probes against the pinned source and found none factually wrong, unanswerable, or trivia — but that is a verification pass, not the human blind judgment this gate requires, and it does not fill the blind-review log. A human still has to do that review. |
 | Miss output gives a maintainer a specific, source-grounded edit to try | manual use on 3 real misses, followed by rerun |
 | Held-out probes do not regress after applying the suggested edit | suggestions are not scored only on the questions that produced them |
 
