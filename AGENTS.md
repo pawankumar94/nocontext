@@ -7,8 +7,7 @@ Two documents constrain every change:
 
 - [`docs/METHOD.md`](docs/METHOD.md) — the measurement, written to be attacked.
   The commitments in it are why any number this tool prints is worth anything.
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — core does no I/O, one entry
-  point, documents arrive through an interface.
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — core does no I/O, one entry point every surface calls, documents arrive through an interface, why two surfaces can't each compute their own score, where a new retriever goes if it needs to load a model or call a service, how an MCP server hands the tool documents without a filesystem.
 
 ## Before you commit
 

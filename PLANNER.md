@@ -693,6 +693,20 @@ anything appearing to break.
 
 ## 11. Open questions
 
+**Found 2026-08-28, using the skill on this repo's own `AGENTS.md`:**
+`pointerBlocks()` in `src/core/corpus/index.ts` only captures the single
+line containing a `.md` reference — a multi-line bullet continuation
+(indented text on the following lines, no new bullet marker) is invisible to
+it. Edited `AGENTS.md`'s `docs/ARCHITECTURE.md` entry across four lines
+first; the diagnose score didn't move at all (still 60% miss), which is what
+revealed this rather than a hunch. Collapsing the same content to one line
+took it to 0% miss. The immediate fix (rewrite the entry as one line) is
+committed; the extractor itself still only understands single-line pointer
+blocks, which will misdescribe any index that legitimately wraps a list item
+across multiple lines. Multi-line continuation support needs a real design
+(where does a continuation end — blank line, dedent, next bullet marker?)
+and its own tests, not a rushed patch alongside this note.
+
 Genuinely undecided. Argue for an answer in an issue rather than picking one
 silently:
 
