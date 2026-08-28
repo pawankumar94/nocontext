@@ -269,8 +269,16 @@ probes for OpenAI Codex, NVIDIA NVCF, and Vercel AI SDK. Each source checkout,
 navigation surface, and `pointer-block@1` constraint is recorded there. The
 review log is deliberately blank: these questions cannot count as evidence
 until an independent human reviewer accepts or rejects them without seeing the
-evaluated surface. No surface rewrite or held-out comparison has been performed
-yet.
+evaluated surface.
+
+**Provisional workflow dry run, not a gate result:** fresh disposable clones
+at the three pinned commits confirmed that every expected document exists and
+that the development workflow runs with no API key. An AI body-only pre-screen
+and temporary source-faithful surface edits produced compatible held-out P@1
+improvements in at least one retriever for all three corpora. The same AI
+performed the pre-screen, each held-out set has only six probes, and no human
+review log is filled. This validates the workflow, not the claim. Full record:
+[`validation/phase3/provisional-ai-dry-run-2026-08-28.md`](validation/phase3/provisional-ai-dry-run-2026-08-28.md).
 
 ## 6. Build order
 
