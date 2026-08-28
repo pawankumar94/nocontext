@@ -1,12 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" font-family="Inter, system-ui, -apple-system, sans-serif">
   <rect width="1280" height="640" fill="#16181D"/>
 
-  <!-- an assertion, and a citation with nothing behind it -->
+  <!-- an assertion, and a citation that has a source -->
   <rect x="96" y="150" width="430" height="15" rx="7.5" fill="#9AA0A6" opacity=".55"/>
   <rect x="96" y="186" width="372" height="15" rx="7.5" fill="#9AA0A6" opacity=".55"/>
   <rect x="96" y="222" width="366" height="15" rx="7.5" fill="#9AA0A6" opacity=".55"/>
   <rect x="96" y="258" width="376" height="15" rx="7.5" fill="#9AA0A6" opacity=".55"/>
-  <g stroke="#E07B39" stroke-width="7.9" fill="none" stroke-linecap="square"><path d="M505.0 235.6 H493.1 V296.4 H505.0"/><path d="M527.0 235.6 H538.9 V296.4 H527.0"/></g>
+  <g stroke="#E07B39" stroke-width="7.0" fill="none" stroke-linecap="square"><path d="M507.3 235.2 H495.9 V296.8 H507.3"/><path d="M548.7 235.2 H560.1 V296.8 H548.7"/></g><path fill="#E07B39" fill-rule="evenodd" d="M519.2 252.8 H533.7 L538.6 257.6 V277.4 Q538.6 279.2 536.8 279.2 H519.2 Q517.4 279.2 517.4 277.4 V254.6 Q517.4 252.8 519.2 252.8 Z M533.7 252.8 L533.7 257.6 L538.6 257.6 Z"/>
 
   <text x="96" y="392" fill="#FBFAF8" font-size="78" font-weight="680" letter-spacing="-2.6">nocontext</text>
   <text x="96" y="444" fill="#9AA0A6" font-size="24" font-weight="420">A retrieval-quality linter for AGENTS.md, CLAUDE.md, and your docs/.</text>
