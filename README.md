@@ -124,6 +124,13 @@ A prediction, recorded before the scorer exists: **all four must report the same
 ceiling**, since the documents are identical. If they do not, the implementation
 has a bug and this is how we find out.
 
+## Building on this
+
+[`PLANNER.md`](PLANNER.md) is the working plan: what is being built, in what
+order, what each phase has to prove before the next begins, and the open
+questions that are genuinely still open. [`AGENTS.md`](AGENTS.md) is the short
+version for coding agents.
+
 ## Method
 
 [`docs/METHOD.md`](docs/METHOD.md) is written to be attacked, and it is worth
