@@ -22,7 +22,9 @@ between the before and after runs.
 Each JSON file was generated from the named document bodies. The navigation
 surface was excluded from question authoring. A reviewer must inspect each
 question and its expected document without seeing the navigation surface, then
-record an accept or reject decision in the review log below.
+record an accept or reject decision in a copy of
+[`blind-review-template.md`](blind-review-template.md). The per-probe record
+is the audit trail; the aggregate review log below is only a summary.
 
 Accept only a question that is plausible during real work, has a direct answer
 in every document named by `expect`, and is not merely a heading lookup,
@@ -35,6 +37,8 @@ where the selected surface should link the gold document but does not, or a
 **vocabulary** probe, where the pointer exists but does not route the question.
 Do not combine those conditions into one unsupported claim. The current runs
 use `pointer-block@1`; do not compare them to older `link-line@1` output.
+Use [`classification-template.md`](classification-template.md) for this step,
+after blind review is complete and before editing the surface.
 
 Keep `development.json` and `held-out.json` separate. Use only development
 questions with `--diagnose`. Do not inspect held-out misses until the navigation

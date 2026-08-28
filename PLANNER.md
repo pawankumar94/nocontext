@@ -269,7 +269,9 @@ probes for OpenAI Codex, NVIDIA NVCF, and Vercel AI SDK. Each source checkout,
 navigation surface, and `pointer-block@1` constraint is recorded there. The
 review log is deliberately blank: these questions cannot count as evidence
 until an independent human reviewer accepts or rejects them without seeing the
-evaluated surface.
+evaluated surface. `blind-review-template.md` records each accepted or
+rejected probe; `classification-template.md` records coverage versus vocabulary
+only after blind review is complete.
 
 **Provisional workflow dry run, not a gate result:** fresh disposable clones
 at the three pinned commits confirmed that every expected document exists and
