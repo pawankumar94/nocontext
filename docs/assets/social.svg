@@ -9,7 +9,7 @@
   <g stroke="#E07B39" stroke-width="7.9" fill="none" stroke-linecap="square"><path d="M505.0 235.6 H493.1 V296.4 H505.0"/><path d="M527.0 235.6 H538.9 V296.4 H527.0"/></g>
 
   <text x="96" y="392" fill="#FBFAF8" font-size="78" font-weight="680" letter-spacing="-2.6">nocontext</text>
-  <text x="96" y="444" fill="#9AA0A6" font-size="24" font-weight="420">Your agent will answer with nothing behind it. This tells you how often.</text>
+  <text x="96" y="444" fill="#9AA0A6" font-size="24" font-weight="420">A retrieval-quality linter for AGENTS.md, CLAUDE.md, and your docs/.</text>
   <text x="96" y="486" fill="#E07B39" font-size="19" font-weight="500" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">github.com/pawankumar94/nocontext</text>
 
   <g transform="translate(830 172)" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">

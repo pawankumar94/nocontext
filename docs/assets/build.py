@@ -72,7 +72,7 @@ font-family="Inter, system-ui, -apple-system, sans-serif">
   <text x="96" y="392" fill="{PAPER}" font-size="78" font-weight="680" \
 letter-spacing="-2.6">nocontext</text>
   <text x="96" y="444" fill="{MUTE}" font-size="24" font-weight="420">\
-Your agent will answer with nothing behind it. This tells you how often.</text>
+A retrieval-quality linter for AGENTS.md, CLAUDE.md, and your docs/.</text>
   <text x="96" y="486" fill="{AMBER}" font-size="19" font-weight="500" \
 font-family="ui-monospace, SFMono-Regular, Menlo, monospace">\
 github.com/pawankumar94/nocontext</text>

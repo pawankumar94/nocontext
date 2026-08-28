@@ -1,150 +1,176 @@
 <p align="center">
-  <img src="docs/assets/logo.svg" width="76" alt="nocontext">
+  <img src="docs/assets/logo.svg" width="72" alt="nocontext">
 </p>
 
 <h1 align="center">nocontext</h1>
+<p align="center"><strong>A retrieval-quality linter for AGENTS.md, CLAUDE.md, and the docs your agents already read.</strong></p>
 
 <p align="center">
-  <em>Your agent will answer these questions with nothing behind it.<br>
-  This tells you how many.</em>
-</p>
-
-<p align="center">
-  <a href="docs/METHOD.md"><img alt="method: published first" src="https://img.shields.io/badge/method-published%20before%20results-E07B39"></a>
-  <img alt="status: pre-alpha" src="https://img.shields.io/badge/status-pre--alpha-9AA0A6">
+  <a href="docs/METHOD.md"><img alt="method: published before results" src="https://img.shields.io/badge/method-published%20before%20results-E07B39"></a>
+  <img alt="status: unvalidated, see below" src="https://img.shields.io/badge/status-unvalidated-9AA0A6">
   <img alt="license: MIT" src="https://img.shields.io/badge/license-MIT-9AA0A6">
 </p>
 
-> **Pre-alpha. The CLI does not run yet.**
-> The methodology is settled and published, the example corpora are built, and
-> the implementation is being written against both. The output below is the
-> shape of the finished tool, not a recording of a real run. Nothing here
-> reports a number yet, deliberately: `docs/METHOD.md` went in first so that
-> the method could not be shaped to fit a result.
-
 ---
 
-Your docs lint clean. Your frontmatter is complete. Your wiki is valid.
+## The problem in one sentence
 
-None of that tells you whether an agent pointed at that folder can actually
-**reach** the right document when someone asks a question. When it can't, it
-does not error. It answers anyway, from memory, with no source behind it, and
-nothing in any log records that it happened.
+**Claude Code, Cursor, and Codex all read `AGENTS.md` / `CLAUDE.md` / your `docs/`
+folder to decide what your project needs them to know — and every one of them
+finds that context by something closer to keyword matching than reading
+comprehension.**
+
+You write your index the way you'd explain the project to a colleague:
+*"what must be true before a production rollout."* Nobody searches in that
+phrasing. They ask *"do migrations run before or after the deploy?"* — and if
+those words don't overlap, the agent doesn't error. It just doesn't find your
+doc, and answers from its own priors instead. Nothing logs that this happened.
+The session looks completely normal.
+
+`nocontext` finds those mismatches before your agent does.
 
 ```
-$ npx nocontext ./docs          # intended output, not yet runnable
+$ nocontext examples/retrieval-index
 
-  ungrounded rate        43%
+  ungrounded rate       47%  (1 - P@1)
 
-  floor (random)          8%     ← 12 documents
-  observed (index)       57%
-  ceiling (full text)    92%     ← the answers are in your corpus
+                        P@1     MRR     R@3     R@5
+  floor (random)        17%     0.41    50%     83%
+  observed (index)      53%     0.58    63%     63%
+  ceiling (full text)   74%     0.82    89%     89%
 
-  35 points of your own information is not reachable from your index.
+  21 points of your own information is not reachable from your index.
+
+  unreachable
+    [ ] How long do we hold at 5% before going full?
+        answer is in docs/deploy-policy.md
+    [ ] Who has to stay online while a release is going out?
+        answer is in docs/deploy-policy.md
+    [ ] Can I swap a shift without asking anyone?
+        answer is in docs/oncall.md
+    [ ] Are traces backed up anywhere?
+        answer is in docs/data-retention.md
+    [ ] Why am I getting 429s?
+        answer is in docs/rate-limits.md
+    [ ] What happens if I keep retrying immediately?
+        answer is in docs/rate-limits.md
+    [ ] Does a degraded service page anyone at 3am?
+        answer is in docs/incident-severity.md
+    [ ] Can we downgrade an incident once it's open?
+        answer is in docs/incident-severity.md
+    and 1 more
+
+  bm25@1.0.0 · 19 probes
 ```
 
-That gap is the finding. The corpus knows the answer. The navigation surface
-does not expose it.
+That's the real output of a real, working command against one of the bundled
+example corpora (`examples/retrieval-index/`) — not a mockup. See
+[the honesty section](#how-honest-is-this-right-now) below for exactly what
+this result does and doesn't prove yet.
 
-Ungrounded results are marked `[ ]` in output, which is also the mark: a
-citation with nothing behind it.
+## Why this and not another OKF/RAG tool
+
+Every existing linter in this space — `okf-skills`, `okfcli`, Inkeep's
+OpenKnowledge plugin, the rest — checks whether your docs are **valid**:
+frontmatter present, links resolve, dates fresh. None of them check whether
+your docs are **findable**. A corpus can pass every one of those checks and
+still be invisible to the agent reading it.
+
+And unlike an OKF bundle, an MCP server, or a new knowledge format, `nocontext`
+asks nothing of you. It reads the file your agent *already* reads —
+`AGENTS.md`, `CLAUDE.md`, `README.md`, `docs/` — and tells you where the
+wording is going to lose it. No new format to adopt, no infrastructure to run.
 
 ## Install
 
-Not published yet. When it is:
-
-```bash
-npx nocontext ./docs
-```
-
-No install, no config, no API key for the default run.
-
-To follow along now, clone it and run the tests:
-
 ```bash
 git clone https://github.com/pawankumar94/nocontext && cd nocontext
-npm ci && npm test
+npm ci && npm run build
+node dist/surfaces/cli.js examples/retrieval-index
 ```
 
-## Why three numbers
+That runs against one of the bundled example corpora — point it at your own
+docs the same way, plus `--questions your-probes.json` (see
+[Probe generation](docs/METHOD.md#where-probe-questions-come-from); until
+Phase 3 ships, a questions file is required).
 
-A single percentage is unreadable without knowing the size of the corpus. 60% is
-poor across 3 documents, where random guessing gets you 33%. Across 200
-documents it is extraordinary. Any tool that shows you one number is selling
-you a figure rather than a measurement.
+Not yet on npm. `npx nocontext ./docs` is the target once it is.
+
+## How honest is this right now
+
+Say plainly what is and isn't proven, because a measurement tool that oversells
+itself is worthless.
+
+**Demonstrated:** on a hand-built corpus designed specifically to show the
+effect, an index written in retrieval-friendly vocabulary scores meaningfully
+higher than the same content indexed the way a person would summarise it —
+same documents, same probes, only the wording of the index changed. That's the
+mechanism, isolated. [`examples/`](examples/) is the controlled experiment and
+you can rerun it yourself.
+
+**Not yet demonstrated:** that a higher `nocontext` score causes an agent to
+actually *succeed more often* on real tasks, in real repositories nobody built
+to prove a point. That correlation is the entire justification for anyone
+paying attention to this number, and it has not been run yet. It's
+[Phase 4 in the planner](PLANNER.md#phase-4--prove-the-score-predicts-something-real),
+and nothing here should be trusted as a product claim until it passes.
+
+If you're the kind of person who wants to see a tool prove itself before
+trusting it: that's the position we're in too. Watch that phase, not this
+README.
+
+## How it scores
+
+Standard IR metrics — P@1, MRR, Recall@{1,3,5} — the same ones
+[ContextBench](https://arxiv.org/abs/2602.05892) and
+[Agent Retrieval Bench](https://arxiv.org/html/2607.24882v1) report, not a
+scale invented for this project. See [`docs/METHOD.md`](docs/METHOD.md) for
+why, and for where this sits relative to those two benchmarks — short version,
+they fix the repository and vary the retriever; we fix the retriever and vary
+the navigation surface, which neither of them measures.
+
+Every run reports three conditions, never one number alone:
 
 | | |
 |---|---|
-| **Floor** | random selection, `1/N` |
-| **Observed** | routing using only the index or file tree |
-| **Ceiling** | routing with full document bodies available |
+| **Floor** | a random ranking would score this. Shrinks as corpus size grows. |
+| **Observed** | routing using only the index (or file tree, if there is none) |
+| **Ceiling** | routing with full document bodies available, same retriever |
 
-The distance between observed and ceiling is the part you can actually fix, and
-it is usually the index. Where the ceiling is also low, the answer is not in
-your docs at all, and `nocontext` will say so rather than blaming your index.
-
-## What it works on
-
-Any directory an agent reads. `docs/`, a wiki, `CLAUDE.md` and `AGENTS.md`,
-an OKF bundle, a folder of runbooks. If the corpus has no index, the file tree
-is scored as the index, because that is genuinely what the agent navigates.
+A bare percentage is unreadable without the corpus size behind it: 60% P@1 on
+3 documents is barely above chance, on 200 it's remarkable. The gap between
+observed and ceiling is the part an index rewrite can actually fix.
 
 ## Can I game it?
 
-Yes, and the obvious way is to stuff your index with keywords.
+Yes, today, with plain keyword stuffing — and the tool says so about itself
+rather than hiding it. Until a semantic retriever ships (tracked in
+[Phase 3](PLANNER.md#phase-3--make-it-hard-to-fool)), scoring runs on BM25
+alone, and BM25 rewards an index padded with query vocabulary regardless of
+whether that vocabulary describes anything true.
+[`examples/stuffed-index/`](examples/stuffed-index) is that adversarial corpus,
+committed on day one specifically so this gap is visible and testable rather
+than discovered later by someone else.
 
-So routing is scored under a lexical retriever and an embedding retriever, and
-the two are reported separately and never averaged. **A stuffed index scores
-high lexically and flat semantically.** That divergence is reported as a
-warning, not as a good score.
+## What it works on
 
-`examples/stuffed-index/` is a corpus built specifically to cheat. If a change to this
-tool ever lets it pass clean, the change is wrong.
-
-## The examples are a controlled experiment
-
-`examples/` holds four corpora with **byte-identical documents and byte-identical
-probes**. The only thing that varies is the navigation surface, so any
-difference in score between them is caused by the index and nothing else.
-
-| variant | surface | what it is |
-|---|---|---|
-| `human-index` | `index.md` | reads well to a person, routes badly |
-| `retrieval-index` | `index.md` | same docs, indexed in the words people ask in |
-| `stuffed-index` | `index.md` | gamed: probe vocabulary dumped in, describes nothing |
-| `no-index` | file tree | no index, the implicit-surface path |
-
-They are generated from one source rather than maintained by hand, because
-hand-maintained copies drift and drift would void the control without anything
-appearing to break. CI regenerates them and fails if the committed tree has
-moved.
-
-The probes were hand-written before any index existed, phrased the way someone
-asks rather than the way the documents phrase themselves, so no variant is
-favoured.
-
-A prediction, recorded before the scorer exists: **all four must report the same
-ceiling**, since the documents are identical. If they do not, the implementation
-has a bug and this is how we find out.
+Any directory an agent reads: `AGENTS.md`, `CLAUDE.md`, a `docs/` folder, a
+wiki, an OKF bundle, a folder of runbooks. No index file present means the
+file tree is scored as the navigation surface, since that's genuinely what an
+agent without an index has to work with — labelled as such in the output, and
+not compared 1:1 against corpora that do have an index.
 
 ## Building on this
 
-[`PLANNER.md`](PLANNER.md) is the working plan: what is being built, in what
-order, what each phase has to prove before the next begins, and the open
-questions that are genuinely still open. [`AGENTS.md`](AGENTS.md) is the short
-version for coding agents.
+[`PLANNER.md`](PLANNER.md) has the full build plan: every phase, what evidence
+each one has to produce, and the explicit criteria for passing or killing it.
+[`AGENTS.md`](AGENTS.md) is the short version for coding agents joining this
+repo. [`docs/METHOD.md`](docs/METHOD.md) is the methodology, written to be
+attacked — read it before trusting any number this tool prints.
 
-## Method
-
-[`docs/METHOD.md`](docs/METHOD.md) is written to be attacked, and it is worth
-reading before you trust a number from this. It covers where probe questions
-come from and why they are never generated from the index, what the tool does
-not measure, and the five strongest objections to the methodology with honest
-answers.
-
-If you find a corpus where `nocontext` is obviously wrong, open an issue with
-the corpus attached. That is the most useful thing anyone can contribute, and
-corrections get made in public.
+If you have a corpus where `nocontext` gives an obviously wrong answer, that's
+the single most useful issue you could open. See
+[`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## License
 
