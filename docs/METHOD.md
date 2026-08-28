@@ -41,7 +41,7 @@ Every run reports:
 |---|---|
 | **Floor** | random selection, `1/N`. What the score would be with no information at all. |
 | **Observed** | index-only routing. |
-| **Ceiling** | routing with full document bodies available. What perfect navigation would achieve. |
+| **Ceiling** | routing with full document bodies available, under the same retriever. |
 
 The product is the **gap between observed and ceiling**. That is the portion of
 your corpus's own information that your navigation surface is failing to expose.
@@ -53,6 +53,16 @@ you a number rather than a finding.
 
 Where the ceiling is itself low, the problem is not navigation. The corpus does
 not contain the answer, and this tool will say so rather than blaming the index.
+
+**The ceiling is retriever-limited, not absolute.** It is what this retriever
+manages with the whole document in front of it, which is not the same as what a
+reasoning model would manage. On the bundled example corpus BM25 reaches 74%
+with full text, so a quarter of the probes are not answerable by lexical
+matching at all, whatever the index says. An earlier draft of this document
+called the ceiling "what perfect navigation would achieve". That was wrong and
+this is the correction: it is an upper bound under one scorer, and the honest
+reading of the gap is "how much of what this retriever could find is hidden by
+the index", not "how much of the truth is unreachable".
 
 ## Where probe questions come from
 
@@ -89,6 +99,13 @@ keywords.
 is not noise, it is the signal that someone optimised for the metric rather than
 for their readers. A large positive gap between the two scores is reported as a
 warning, not as a good result.
+
+How badly this is needed is measurable. On the bundled corpora the stuffed index
+scores **79%** against an honest index's 53%, and beats even the 74% full-text
+ceiling. Padding an index with query vocabulary currently outperforms reading
+the entire document. Until the semantic retriever ships, this tool can be gamed
+completely, and it says so in its own output rather than quietly reporting the
+inflated number as a good score.
 
 `examples/stuffed/` is a corpus built specifically to game the lexical score. If
 a change to this tool ever lets that corpus pass clean, the change is wrong.

@@ -1,5 +1,72 @@
-/** Loading a directory into Docs and a NavigationSurface */
+/** Turning a CorpusSource into documents and a navigation surface. */
+import type { CorpusSource, Doc, NavigationSurface } from "../types.js";
 
-export {};
+const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/;
 
-// Not implemented. Contracts are in ./types.ts.
+/** Deliberately not a YAML parser. Scalars are all the contracts need. */
+export function splitFrontmatter(raw: string): { meta: Record<string, unknown>; body: string } {
+  const m = FRONTMATTER.exec(raw);
+  if (!m) return { meta: {}, body: raw };
+  const meta: Record<string, unknown> = {};
+  for (const line of (m[1] ?? "").split(/\r?\n/)) {
+    const kv = /^([A-Za-z_][\w-]*):\s*(.*)$/.exec(line);
+    if (kv?.[1]) meta[kv[1]] = (kv[2] ?? "").replace(/^["']|["']$/g, "");
+  }
+  return { meta, body: raw.slice(m[0].length) };
+}
+
+function titleOf(meta: Record<string, unknown>, body: string, id: string): string {
+  if (typeof meta["title"] === "string" && meta["title"]) return meta["title"];
+  const h1 = /^#\s+(.+)$/m.exec(body);
+  if (h1?.[1]) return h1[1].trim();
+  return id.replace(/\.md$/i, "").split("/").pop() ?? id;
+}
+
+export async function loadDocs(source: CorpusSource): Promise<Doc[]> {
+  const ids = await source.list();
+  return Promise.all(ids.map(async (id) => {
+    const { meta, body } = splitFrontmatter(await source.read(id));
+    return { id, title: titleOf(meta, body, id), body, meta };
+  }));
+}
+
+/**
+ * Build the navigation surface: what the agent sees before opening anything.
+ *
+ * With an index, each document's entry is the line of the index that links to
+ * it, which is how the index actually describes it. Without one, the surface is
+ * the file tree, because that is genuinely all an agent has. Paths only, not
+ * titles: reading frontmatter means opening the file, which is the thing the
+ * surface is supposed to make unnecessary.
+ */
+export async function buildSurface(
+  source: CorpusSource,
+  docs: Doc[],
+): Promise<NavigationSurface> {
+  const indexId = await source.indexPath?.();
+  if (!indexId) {
+    return {
+      kind: "implicit",
+      entries: docs.map((d) => ({ docId: d.id, text: d.id.replace(/[/_-]/g, " ") })),
+    };
+  }
+
+  const { body } = splitFrontmatter(await source.read(indexId));
+  const lines = body.split(/\r?\n/);
+  const entries = docs.map((doc) => {
+    const target = doc.id.split("/").pop() ?? doc.id;
+    const hit = lines.filter((l) => l.includes(doc.id) || l.includes(target));
+    return { docId: doc.id, text: hit.length ? hit.join(" ") : "" };
+  });
+
+  // An index that links to nothing is not a navigation surface. Fall back
+  // rather than scoring every document as unreachable, which would be
+  // dramatic and wrong.
+  if (entries.every((e) => e.text === "")) {
+    return {
+      kind: "implicit",
+      entries: docs.map((d) => ({ docId: d.id, text: d.id.replace(/[/_-]/g, " ") })),
+    };
+  }
+  return { kind: "explicit", source: indexId, entries };
+}
