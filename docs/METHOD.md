@@ -7,6 +7,27 @@ from you than from a thread.
 Everything below is implemented in `src/` and reproducible on any corpus,
 including your own.
 
+## What actually moved, decided 2026-08-28 after the table existed, not before
+
+Routing moved on real repos (Phase 4a: `validation/phase4/`), and grounding
+under a real agent moved too, but only for one specific kind of gap, not for
+the other (Phase 4b: `validation/phase4b/`). Across three real, independently
+selected repositories, fixing a document that was **never linked anywhere**
+in the navigation surface took a capped agent's grounding from 0% to 100% on
+held-out questions. Fixing a document that was **linked but poorly worded**
+changed nothing, on two separate repos, under the same cap. This tool is for
+finding the first kind of gap — an agent-facing map with a genuinely missing
+pointer — under conditions where an agent can't just cheaply explore its way
+past that absence, such as a hard tool-call or token budget, or a ranked
+retrieval step it can't override. It is not shown to help, and should not be
+described as helping, when the problem is wording rather than coverage, or
+when the consuming agent has unconstrained file access to a small enough
+corpus that guessing well is cheap. What this does not claim: that running
+`nocontext` and rewriting vocabulary will make an agent ground more answers
+in general, that this holds under a real vector-search or MCP-resource-picker
+condition (only a flat call-count cap has been tested), or that any of this
+generalizes beyond the three repos it's been shown on so far.
+
 ## Where this sits relative to existing benchmarks
 
 Two recent benchmarks measure retrieval in coding agents and are worth reading

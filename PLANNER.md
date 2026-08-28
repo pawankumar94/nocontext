@@ -493,40 +493,58 @@ the hand-built fixture and the one pilot repo.
   diluting long documents. Offered as a hypothesis, not a checked fix. It
   means the semantic ceiling isn't always reliable ground truth.
 
-### Phase 4b — Does it change what a real agent does? Still open.
+### Phase 4b — Does it change what a real agent does? ✅ DONE, 2026-08-28
 
-The actual causal question. Smaller and more honest in scope than the
-original design: not a preregistered multi-repo study up front, but a bounded
-next step now that Phase 4a gives real routing evidence to test against.
+Frozen before running anything, per direct instruction: hard cap of 3 Read
+calls per question (not "top 3 files the retriever returns" — that needed
+retriever output wired into agent permissions, more moving parts for the
+same test). One fresh subagent per (repo, surface condition), the three
+Phase 4a repos, the same held-out probes, zero shared context between runs
+or with this conversation. Full method, table, and raw transcripts:
+`validation/phase4b/README.md` and `raw-runs.md`.
 
-**Build:**
+**Result:**
 
-- [ ] Pick one of the three Phase 4a repos (NVCF's coverage gap is the
-      sharpest case: 0% lexical routing to docs genuinely never linked).
-- [ ] Run a real agent (Claude Code or Codex) against the as-is surface and
-      the revised surface, same held-out questions, and record per question:
-      did it ground its answer in the real document, and how much did it
-      explore to get there (files opened, tool calls).
-- [ ] Only after this single-repo test says something is worth widening does
-      a bigger, multi-repo version become the next step — not before.
+| repo | surface | first-file = gold | grounded | confidently wrong |
+|---|---|---:|---:|---:|
+| Codex | as-is | 6/6 | 6/6 | 0/6 |
+| Codex | rewritten | 6/6 | 6/6 | 0/6 |
+| NVCF | as-is | 0/6 | 0/6 | 2/6 |
+| NVCF | rewritten | 5/6 | 6/6 | 0/6 |
+| Vercel AI | as-is | 6/6 | 6/6 | 0/6 |
+| Vercel AI | rewritten | 6/6 | 6/6 | 0/6 |
 
-**Evidence required:**
+Aggregate grounded: as-is 12/18, rewritten 18/18. That movement is almost
+entirely one repo. **Codex and Vercel AI showed zero effect** — 6/6 grounded
+on both surfaces, both repos, exactly matching the earlier pilot (§3a): a
+capped agent still reasons past a vocabulary-mismatched entry when the
+document is linked somewhere and the corpus is small enough to make a good
+guess cheap. **NVCF swung 0/18 to 18/18** — the repo where the gap was pure
+coverage, not wording: three target documents were never linked from any
+navigation file. Two of NVCF's as-is misses were not absent answers, they
+were confidently wrong ones — the agent read an adjacent real document and
+answered opposite to what the actual gold document says. That is the
+concrete instance of the failure mode this project exists to catch.
 
-| required | why |
-|---|---|
-| Per-question grounding outcome and exploration cost, both surfaces | this is the test Phase 4a cannot provide by itself |
-| Raw transcripts published alongside the summary | so a disputed grade is checkable |
-
-**Kill criterion, unchanged in spirit from the original design:** if the
-revised surface changes neither grounding nor exploration cost on this one
-repo, say so in `METHOD.md` and do not scale the test up on the assumption
-that a bigger sample would find what a real single case didn't.
+**Kill criterion outcome: partially triggered, and the honest reading is
+narrower than either "it works" or "it doesn't."** The revised surface
+changed nothing on two of three repos under this cap — vocabulary-only fixes
+did not move grounding here. It changed everything on the one repo where the
+fix was coverage, not wording. Per the pre-committed branches: this does not
+support "fix your navigation surface and your agent will stop guessing" as a
+general claim. It supports a narrower one — **a missing pointer, not a
+mis-worded one, is what changes agent grounding under a real constraint** —
+and even that is shown under one operationalized constraint (a flat call
+budget), not yet under a real ranked-retrieval or MCP-resource-picker
+condition, which remains untested and is named as such rather than implied.
 
 **Only past this gate does any output get called a "finding" or a
-"benchmark" in public.** Phase 4a's replication is real evidence toward
-Claim A. It is not yet a finding about Claim B.
+"benchmark" in public.** Phase 4a is real evidence toward Claim A. Phase 4b
+is real evidence toward Claim B, narrower than originally hoped: coverage
+gaps under a constrained agent, not vocabulary gaps, and not yet demonstrated
+under ranked retrieval specifically.
 
-### The skill and assist mode — parallel, not gated on Phase 4
+### The skill and assist mode — parallel, not gated on Phase 4### The skill and assist mode — parallel, not gated on Phase 4
 
 Unlike everything else in Phase 5, **`SKILL.md` and a zero-config CLI mode
 don't need to wait.** Neither needs an MCP server. Confirmed before
@@ -626,7 +644,7 @@ reading `PLANNER.md`, `METHOD.md`, or asking a question.
 | CLI | `node dist/surfaces/cli.js ./docs` (→ `npx nocontext` later) | phase 2 — done |
 | Anti-gaming | direct leakage detection + held-out evaluation workflow | phase 3 — in progress |
 | Routing replication | vocabulary/coverage effect confirmed on 3 real repos, not just a fixture | phase 4a — done |
-| **The finding** | **does a routing fix change real agent grounding or exploration cost** | **phase 4b — not started, the actual remaining deliverable** |
+| **The finding** | **coverage gaps change agent grounding under a call-budget constraint; vocabulary gaps did not, on 2 of 3 repos** | **phase 4b — done. Narrower than hoped, published as-is** |
 | GitHub Action | fails a build when findability drops | phase 5, gated on phase 4 |
 | MCP server | published to the official MCP registry, works in any MCP client | phase 5, gated on phase 4 |
 | Assist mode | zero-config `nocontext .` miss list, no probes needed | not gated — done |
