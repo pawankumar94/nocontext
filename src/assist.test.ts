@@ -39,15 +39,40 @@ test("bare invocation prints a miss list, not an error", async () => {
   }
 });
 
-test("bare invocation writes topic probes to disk and points at them", async () => {
+test("bare invocation never writes into the user's tree by default", async () => {
   const dir = await corpus();
   try {
     const { stdout } = await run("node", [CLI, dir, "--no-color"]);
+    await assert.rejects(readFile(join(dir, "nocontext-topic-probes.json")),
+      "a disposable topic-probe run must not land in the user's tree unless asked");
+    assert.doesNotMatch(stdout, /nocontext-topic-probes\.json/,
+      "default output should not point at a path in the user's tree either");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("--write-probes keeps generated probes in the target directory and points at them", async () => {
+  const dir = await corpus();
+  try {
+    const { stdout } = await run("node", [CLI, dir, "--write-probes", "--no-color"]);
     const path = join(dir, "nocontext-topic-probes.json");
     const written = JSON.parse(await readFile(path, "utf8")) as { origin: string; probes: unknown[] };
     assert.equal(written.origin, "topic");
     assert.ok(written.probes.length > 0);
     assert.match(stdout, /nocontext-topic-probes\.json/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("assist output labels topic probes as coverage-only, never a score", async () => {
+  const dir = await corpus();
+  try {
+    const { stdout } = await run("node", [CLI, dir, "--no-color"]);
+    assert.match(stdout, /coverage only/);
+    assert.match(stdout, /[Nn]ot how a person would ask/);
+    assert.match(stdout, /[Nn]ot a score/);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

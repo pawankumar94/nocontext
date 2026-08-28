@@ -40,7 +40,18 @@ actually ask.
 
 ## The workflow
 
-**1. Set up the tool**, once per session:
+**1. Check whether `nocontext` is already available before doing anything else:**
+
+```bash
+command -v nocontext
+```
+
+If that prints a path, use it directly for every command below. If it
+doesn't, **say so plainly and stop** — "`nocontext` isn't installed; I can
+clone and build it locally, or you can install it yourself" — and wait for
+the user to say which. Cloning a GitHub repo and running a build is not a
+normal, invisible first step; don't do it as if it were. Only after they've
+agreed:
 
 ```bash
 git clone https://github.com/pawankumar94/nocontext /tmp/nocontext
@@ -74,10 +85,11 @@ Drop heading lookups and trivia. Write this to a temp file, e.g.
 `/tmp/probes.json`.
 
 **4. Run diagnose**, which shows vocabulary gaps without treating anything as
-a held-out score:
+a held-out score. Use `nocontext` if step 1 found it on PATH, otherwise
+`node /tmp/nocontext/dist/surfaces/cli.js`:
 
 ```bash
-node /tmp/nocontext/dist/surfaces/cli.js <path-to-repo> \
+nocontext <path-to-repo> \
   --include docs \
   --questions /tmp/probes.json \
   --diagnose

@@ -4,13 +4,16 @@
  * what P@1 means. Full metrics live behind --evaluate; this is the miss list
  * and the words to add, nothing else.
  *
- * Never call this a score. If the probes are origin "topic" (mechanical,
- * no-model, coverage-only — see core/probes/topic.ts), say so plainly so
- * nobody mistakes an unreviewed heading list for evidence.
+ * Never call this a score. Topic probes (mechanical, no-model, from a
+ * document's own heading — see core/probes/topic.ts) test coverage, not
+ * phrasing: they can tell you a document is never pointed at, not that the
+ * wording would fail a real question. That distinction is stated on every
+ * line this renders when origin is "topic", not once at the top where it's
+ * easy to miss.
  */
 import type { Run } from "../core/types.js";
 
-export function renderAssist(run: Run, questionsPath: string, color = true): string {
+export function renderAssist(run: Run, questionsPath: string | undefined, color = true): string {
   const c = (code: string, s: string) => (color ? `\x1b[${code}m${s}\x1b[0m` : s);
   const dim = (s: string) => c("2", s);
   const amber = (s: string) => c("33", s);
@@ -25,9 +28,12 @@ export function renderAssist(run: Run, questionsPath: string, color = true): str
     `  surface   ${surface}  ${dim("(auto)")}`,
   ];
 
-  out.push(isTopic
-    ? `  ${total} topic probes from doc headings — mechanical, not real questions. See below.`
-    : `  ${total} questions checked`);
+  if (isTopic) {
+    out.push(`  ${total} topic probes from headings — coverage only (is the doc pointed at).`);
+    out.push(`  Not how a person would ask. Not a score.`);
+  } else {
+    out.push(`  ${total} questions checked`);
+  }
 
   out.push(`  ${amber("top-1 miss")}  ${misses}/${total}`);
   out.push("");
@@ -45,14 +51,20 @@ export function renderAssist(run: Run, questionsPath: string, color = true): str
   if (run.findings.length > 10) out.push(`  ${dim(`and ${run.findings.length - 10} more`)}`);
 
   if (!run.findings.length && misses === 0) {
-    out.push(`  ${dim("Every question routed to its document. Nothing to fix.")}`);
+    out.push(isTopic
+      ? `  ${dim("Every heading's document is pointed at somewhere. This did not check phrasing.")}`
+      : `  ${dim("Every question routed to its document. Nothing to fix.")}`);
   }
 
   out.push("");
   if (isTopic) {
-    out.push(`  ${dim(`These are mechanical topic checks, not real questions a person would ask.`)}`);
-    out.push(`  ${dim(`Review or replace them at ${questionsPath}, then get a comparable score with:`)}`);
-    out.push(`  ${dim(`  nocontext . --questions ${questionsPath} --evaluate`)}`);
+    out.push(`  ${dim("Coverage only, not real questions. For real phrasing, write questions from")}`);
+    out.push(`  ${dim("the doc bodies yourself and pass --questions, or add --write-probes to keep")}`);
+    out.push(`  ${dim("this run's probes for review instead of discarding them.")}`);
+    if (questionsPath) {
+      out.push(`  ${dim(`Saved at ${questionsPath}. Get full metrics with:`)}`);
+      out.push(`  ${dim(`  nocontext . --questions ${questionsPath} --evaluate`)}`);
+    }
   } else {
     out.push(`  ${dim(`Full metrics (P@1, MRR, Recall@k) and a comparable score:`)}`);
     out.push(`  ${dim(`  nocontext . --questions ${questionsPath} --evaluate`)}`);

@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 /** Terminal surface. Builds a source, calls analyze, formats. No measurement. */
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { analyze } from "../core/analyze.js";
 import { loadDocs } from "../core/corpus/index.js";
 import { fileSystemSource } from "../sources/filesystem.js";
@@ -18,11 +20,14 @@ const USAGE = `
   nocontext <dir> [options]        the full protocol, see below
 
   With no other flags, nocontext auto-detects a navigation surface,
-  generates mechanical topic probes from your docs (no model, coverage only),
-  and prints a miss list: what a question would hit, what it should hit, and
-  which words to add. Nothing here is a score.
+  generates mechanical topic probes from your docs (no model, coverage only:
+  is the doc pointed at, not whether the wording matches a real question),
+  and prints a miss list. Nothing here is a score. Generated probes are
+  scratch data under /tmp unless you pass --write-probes.
 
   --questions <file>   real or reviewed probes. Skips topic-probe generation.
+  --write-probes       keep generated topic probes in this directory instead
+                        of a scratch temp file, and print where they went
   --surface <file>     navigation file to score (for example AGENTS.md)
   --include <path>     document file or directory to include; repeatable
   --baseline <file>    compare this evaluate run with a prior JSON run
@@ -62,7 +67,7 @@ async function loadProbes(path: string): Promise<Probe[]> {
 async function main(): Promise<number> {
   const argv = process.argv.slice(2);
   const valueFlags = new Set(["--questions", "--surface", "--include", "--baseline", "--fail-under"]);
-  const booleanFlags = new Set(["--diagnose", "--evaluate", "--json", "--no-color", "--help"]);
+  const booleanFlags = new Set(["--diagnose", "--evaluate", "--json", "--no-color", "--help", "--write-probes"]);
   const positionals: string[] = [];
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i]!;
@@ -131,6 +136,9 @@ async function main(): Promise<number> {
   const source = fileSystemSource(dir, { surface: flag("--surface"), include: flags("--include") });
 
   let probes: Probe[];
+  // Only set (and only then printed) when --write-probes asks for it. A
+  // topic-probe run is disposable by default: it does not belong in the
+  // user's tree unless they've said they want to keep and review it.
   let generatedPath: string | undefined;
   if (assist) {
     // Topic probes never come from the surface, matching the same rule that
@@ -142,8 +150,14 @@ async function main(): Promise<number> {
       process.stderr.write("  no headings found to generate topic probes from; pass --questions\n\n");
       return 1;
     }
-    generatedPath = `${dir}/nocontext-topic-probes.json`;
-    await writeFile(generatedPath, JSON.stringify({ origin: "topic", probes }, null, 2) + "\n", "utf8");
+    const payload = JSON.stringify({ origin: "topic", probes }, null, 2) + "\n";
+    if (argv.includes("--write-probes")) {
+      generatedPath = `${dir}/nocontext-topic-probes.json`;
+      await writeFile(generatedPath, payload, "utf8");
+    } else {
+      const scratch = await mkdtemp(join(tmpdir(), "nocontext-"));
+      await writeFile(join(scratch, "topic-probes.json"), payload, "utf8");
+    }
   } else {
     const questions = explicitQuestions ?? `${dir}/questions.json`;
     try {
@@ -191,7 +205,7 @@ async function main(): Promise<number> {
   process.stdout.write(argv.includes("--json")
     ? renderJson(run, comparison) + "\n"
     : assist
-      ? renderAssist(run, generatedPath!, !argv.includes("--no-color"))
+      ? renderAssist(run, generatedPath, !argv.includes("--no-color"))
       : renderText(run, !argv.includes("--no-color"), comparison));
 
   if (run.warnings.some((warning) => warning.kind === "invalid-probes")) return 2;
