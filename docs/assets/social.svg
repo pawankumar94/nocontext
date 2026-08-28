@@ -13,7 +13,7 @@
   <text x="96" y="486" fill="#E07B39" font-size="19" font-weight="500" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">github.com/pawankumar94/nocontext</text>
 
   <g transform="translate(830 172)" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">
-    <text x="0" y="0" fill="#9AA0A6" font-size="20">ungrounded rate</text>
+    <text x="0" y="0" fill="#9AA0A6" font-size="20">top-1 routing miss</text>
     <text x="300" y="0" fill="#E07B39" font-size="20" text-anchor="end" font-weight="600">43%</text>
     <line x1="0" y1="24" x2="300" y2="24" stroke="#2C3038"/>
     <text x="0" y="62" fill="#9AA0A6" font-size="18">floor</text>

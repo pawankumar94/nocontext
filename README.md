@@ -29,39 +29,24 @@ The session looks completely normal.
 
 `nocontext` finds those mismatches before your agent does.
 
+```text
+$ nocontext examples/retrieval-index --evaluate
+
+  evaluate run · surface: index.md
+  lexical  bm25@1.0.0
+  top-1 routing miss    47%  (1 - P@1)
+  observed (index)      53% P@1
+  ceiling (full text)   74% P@1
+
+  semantic  minilm-l6-v2@1.0.0+751bff3
+  top-1 routing miss     5%  (1 - P@1)
+  observed (index)      95% P@1
+  ceiling (full text)   95% P@1
 ```
-$ nocontext examples/retrieval-index
 
-  ungrounded rate       47%  (1 - P@1)
-
-                        P@1     MRR     R@3     R@5
-  floor (random)        17%     0.41    50%     83%
-  observed (index)      53%     0.58    63%     63%
-  ceiling (full text)   74%     0.82    89%     89%
-
-  21 points of your own information is not reachable from your index.
-
-  unreachable
-    [ ] How long do we hold at 5% before going full?
-        answer is in docs/deploy-policy.md
-    [ ] Who has to stay online while a release is going out?
-        answer is in docs/deploy-policy.md
-    [ ] Can I swap a shift without asking anyone?
-        answer is in docs/oncall.md
-    [ ] Are traces backed up anywhere?
-        answer is in docs/data-retention.md
-    [ ] Why am I getting 429s?
-        answer is in docs/rate-limits.md
-    [ ] What happens if I keep retrying immediately?
-        answer is in docs/rate-limits.md
-    [ ] Does a degraded service page anyone at 3am?
-        answer is in docs/incident-severity.md
-    [ ] Can we downgrade an incident once it's open?
-        answer is in docs/incident-severity.md
-    and 1 more
-
-  bm25@1.0.0 · 19 probes
-```
+This is a shortened excerpt of the real output. The command also prints the
+random floor, MRR, Recall@3, Recall@5, individual misses, warnings, and the
+exact retriever versions.
 
 That's the real output of a real, working command against one of the bundled
 example corpora (`examples/retrieval-index/`) — not a mockup. See
@@ -70,11 +55,11 @@ this result does and doesn't prove yet.
 
 ## Why this and not another OKF/RAG tool
 
-Every existing linter in this space — `okf-skills`, `okfcli`, Inkeep's
-OpenKnowledge plugin, the rest — checks whether your docs are **valid**:
-frontmatter present, links resolve, dates fresh. None of them check whether
-your docs are **findable**. A corpus can pass every one of those checks and
-still be invisible to the agent reading it.
+Instruction-file linters and repository-readiness tools check structure,
+freshness, overlap, and task compliance. Some also run agents against harvested
+tasks. `nocontext` stays narrower: it tests whether a real question routes
+through a chosen documentation surface to the source that answers it, then
+identifies vocabulary gaps that can be checked on held-out questions.
 
 And unlike an OKF bundle, an MCP server, or a new knowledge format, `nocontext`
 asks nothing of you. It reads the file your agent *already* reads —
@@ -89,10 +74,26 @@ npm ci && npm run build
 node dist/surfaces/cli.js examples/retrieval-index
 ```
 
-That runs against one of the bundled example corpora — point it at your own
-docs the same way, plus `--questions your-probes.json` (see
-[Probe generation](docs/METHOD.md#where-probe-questions-come-from); until
-Phase 3 ships, a questions file is required).
+That runs against one of the bundled example corpora. On your own repository,
+choose the navigation surface and provide reviewed probes:
+
+```bash
+node dist/surfaces/cli.js . --surface AGENTS.md \
+  --include docs --include CONTRIBUTING.md \
+  --questions development.json --diagnose
+node dist/surfaces/cli.js . --surface AGENTS.md \
+  --include docs --include CONTRIBUTING.md \
+  --questions held-out.json --evaluate
+```
+
+Save the first evaluation with `--json`, then pass it back with
+`--baseline before.json` after revising the surface. Incompatible runs are
+rejected instead of producing a misleading delta.
+
+The first semantic run downloads the pinned local MiniLM model. No API key is
+required. Follow the [probe workflow](docs/PROBES.md) and read the
+[measurement method](docs/METHOD.md#where-probe-questions-come-from) before
+trusting a score.
 
 Not yet on npm. `npx nocontext ./docs` is the target once it is.
 
@@ -143,22 +144,24 @@ observed and ceiling is the part an index rewrite can actually fix.
 
 ## Can I game it?
 
-Yes, today, with plain keyword stuffing — and the tool says so about itself
-rather than hiding it. Until a semantic retriever ships (tracked in
-[Phase 3](PLANNER.md#phase-3--make-it-hard-to-fool)), scoring runs on BM25
-alone, and BM25 rewards an index padded with query vocabulary regardless of
-whether that vocabulary describes anything true.
-[`examples/stuffed-index/`](examples/stuffed-index) is that adversarial corpus,
-committed on day one specifically so this gap is visible and testable rather
-than discovered later by someone else.
+Yes. BM25 rewards copied query vocabulary, and the first embedding experiment
+showed that semantic retrieval does not reliably expose the same attack. The
+tool catches direct probe leakage, reports lexical and semantic results
+separately, and keeps diagnosis apart from held-out evaluation. It does not
+claim that these controls detect every optimized index.
+
+[`examples/stuffed-index/`](examples/stuffed-index) is the committed adversary.
+It copies probe questions into their expected entries and must trigger the
+leakage warning without making the honest retrieval index fail.
 
 ## What it works on
 
-Any directory an agent reads: `AGENTS.md`, `CLAUDE.md`, a `docs/` folder, a
-wiki, an OKF bundle, a folder of runbooks. No index file present means the
-file tree is scored as the navigation surface, since that's genuinely what an
-agent without an index has to work with — labelled as such in the output, and
-not compared 1:1 against corpora that do have an index.
+Any Markdown corpus an agent reads: `AGENTS.md`, `CLAUDE.md`, a `docs/` folder,
+a wiki export, an OKF bundle, or runbooks. Auto-detection prefers `AGENTS.md`,
+then `CLAUDE.md`, `index.md`, and `README.md`; `--surface` makes the choice
+explicit. Repeat `--include` to exclude unrelated monorepo Markdown from the
+corpus. If no surface exists, the file tree is scored and labelled as an
+implicit surface.
 
 ## Building on this
 

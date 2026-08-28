@@ -52,9 +52,10 @@ content correct". Those are answered by existing linters and they are all
 orthogonal to this. A corpus can be perfectly formed, entirely accurate, and
 still unreachable.
 
-When the agent does not reach it, the observable outcome is that the agent
-answers anyway, from parametric memory, with no source behind it. That is the
-failure this measures.
+When the retriever does not reach it, an agent must either spend more effort
+exploring or risk answering from prior knowledge without the source. This tool
+measures the routing failure. Phase 4 tests when that failure changes real agent
+grounding or exploration cost.
 
 ## What gets measured
 
@@ -67,8 +68,8 @@ Recall@k matters because agents typically open more than one candidate.
 Scoring only the top hit understates what an index enables and understates
 what one fails to.
 
-We call the inverse of P@1 the **ungrounded rate**: the share of answerable
-questions where the agent's single best guess would not reach its source.
+We call the inverse of P@1 the **top-1 routing miss rate**. It is a retriever
+metric, not a claim that a real agent failed to ground its answer.
 
 ## Three numbers, never one
 
@@ -116,48 +117,64 @@ Three sources, reported separately and never blended:
 
 1. **`--questions <file>`** — real queries from your logs. The gold standard. If
    you have them, nothing here is a substitute.
-2. **Generated** — model-written from bodies, index withheld. The default,
-   because most people have no query logs.
+2. **Generated** — written by a capable host agent from bodies with the index
+   withheld, then reviewed before use. The CLI does not generate template
+   questions when none are supplied because weak probes create trustworthy
+   looking but meaningless scores.
 3. **Fixtures** — hand-written sets shipped in `examples/`, for regression
    testing the tool itself.
 
-Generated probes are written to disk on every run. If you think the questions
-are unfair, you can read them, and you can replace them.
+Every scored probe set is a file you can inspect, dispute, and replace.
+
+Probe sets used to diagnose and rewrite navigation are development data. They
+must not also be the only evidence that the rewrite worked. `--diagnose` emits
+source-grounded edit candidates and rejects CI thresholds. The default
+`--evaluate` mode suppresses edit candidates so a separate held-out set can be
+used for the before-and-after score.
 
 ## Two retrievers, deliberately
 
 Routing is scored under both a lexical retriever (BM25) and an embedding
 retriever. We report both and never average them.
 
-This is the answer to the obvious gaming strategy. Once a tool rewards indexes
-that contain query vocabulary, the way to score well is to stuff the index with
-keywords.
+The two retrievers expose different failure modes. A lexical miss with a
+semantic hit points to a vocabulary mismatch. A miss under both points to a
+shared navigation gap. Their scores remain separate because averaging them
+would hide that diagnosis.
 
-**A stuffed index scores high lexically and flat semantically.** That divergence
-is not noise, it is the signal that someone optimised for the metric rather than
-for their readers. A large positive gap between the two scores is reported as a
-warning, not as a good result.
-
-How badly this is needed is measurable. On the bundled corpora the stuffed index
-scores **79%** against an honest index's 53%, and beats even the 74% full-text
-ceiling. Padding an index with query vocabulary currently outperforms reading
-the entire document. Until the semantic retriever ships, this tool can be gamed
-completely, and it says so in its own output rather than quietly reporting the
-inflated number as a good score.
-
-`examples/stuffed/` is a corpus built specifically to game the lexical score. If
-a change to this tool ever lets that corpus pass clean, the change is wrong.
+The first pinned embedding run invalidated an earlier anti-gaming assumption.
+The honest retrieval index and the probe-stuffed index both reached 95% semantic
+P@1. Semantic divergence is therefore not a stuffing detector. Direct probe
+leakage is detected instead by checking for near-contiguous question text in
+the expected navigation entry. This catches the bundled adversary, but it is
+not presented as a general detector for every form of metric optimization.
 
 ## Corpora with no index
 
-Most documentation directories have no index at all. Scoring them as 100%
-ungrounded would be technically defensible, dramatic, and dishonest, because
+Most documentation directories have no index at all. Scoring them as a 100%
+routing miss would be technically defensible, dramatic, and dishonest, because
 agents navigate file trees perfectly well.
 
 Where no index exists, the **file tree is treated as the index**: paths and
 filenames, which is genuinely what the agent sees. Corpora scored this way are
 labelled `implicit index` in output, because the comparison to a corpus with a
 real index is not like-for-like.
+
+## Choosing the corpus and surface
+
+The CLI auto-detects `AGENTS.md`, `CLAUDE.md`, `index.md`, then `README.md`.
+Use `--surface` when the repository contains more than one plausible navigation
+file. Every run reports the exact file it scored.
+
+Large repositories also contain changelogs, generated Markdown, package notes,
+and subtree instructions that a root surface may not be responsible for. Use
+repeatable `--include` paths to state the intended document corpus. The output
+reports how many included documents have an entry in the selected surface and
+warns when fewer than half are described.
+
+References are matched by normalized in-corpus paths. Fenced code examples do
+not create navigation entries, duplicate basenames do not alias each other, and
+broken or out-of-corpus symlinks are not read.
 
 ## What this does not measure
 
@@ -181,15 +198,18 @@ comparison face the same scorer, so the delta survives even where the absolute
 value does not.
 
 **"You generated the questions, so you chose the outcome."**
-Probes are written to disk, the generation prompt is in `probes/`, and
-`--questions` overrides everything. Bring your own and rerun.
+The CLI requires a reviewed probe file. Host-agent generation must withhold the
+index, preserve the resulting file, and keep evaluation probes separate from
+the questions used to revise navigation. Bring your own queries and rerun.
 
 **"N is too small to mean anything."**
-Runs below a minimum probe count are labelled low-confidence in output. Default
-is 5 probes per document, and small corpora are noisy no matter what we do.
+Runs below a minimum probe count are labelled low-confidence in output. Small
+corpora are noisy no matter what we do.
 
 **"This just rewards keyword stuffing."**
-See the dual-retriever section. It is the main thing the design defends against.
+It can. Direct copies of evaluation questions are rejected, but no automatic
+rule proves an index was not optimized against a known probe set. The held-out
+workflow is the primary defense, and the limitation is explicit.
 
 **"You are measuring a problem you invented."**
 The problem is documented independently: multi-step agent workflows fail
@@ -200,9 +220,9 @@ that.
 ## Reproducing and disputing
 
 ```bash
-npx nocontext ./docs --emit-probes probes.json   # see the questions
-npx nocontext ./docs --questions mine.json       # bring your own
-npx nocontext ./docs --json                      # full run record
+nocontext . --surface AGENTS.md --questions development.json --diagnose
+nocontext . --surface AGENTS.md --questions held-out.json --evaluate
+nocontext . --surface AGENTS.md --questions held-out.json --evaluate --json
 ```
 
 Every run emits its probe set, retriever versions, floor, ceiling, and per-probe

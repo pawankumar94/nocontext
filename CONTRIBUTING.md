@@ -35,9 +35,10 @@ a variant in place.** Edit the source and rebuild. CI regenerates them and fails
 if the committed tree has drifted, because drift would silently turn a
 controlled comparison into an uncontrolled one.
 
-`examples/stuffed-index` exists to cheat. It should score well lexically, flat
-semantically, and trip a stuffing warning. If a change lets it pass clean, the
-change is wrong, whatever else it improves.
+`examples/stuffed-index` exists to cheat by copying probe questions into their
+expected entries. It should score well and trip the direct probe-leakage
+warning. If a change lets it pass clean, the change is wrong, whatever else it
+improves.
 
 ## Things that will be rejected
 

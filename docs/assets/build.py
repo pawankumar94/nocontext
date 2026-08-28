@@ -9,8 +9,8 @@ Proportions are deliberate. A checkbox is square, closed and centred, so the
 mark is taller than wide with a wide aperture and short arms, which is what
 keeps it reading as a citation at small sizes.
 
-It is also notation, not decoration: the CLI marks ungrounded results [ ] in its
-own output, so the logo is a symbol the product uses.
+It is also notation, not decoration: the CLI marks routing misses [ ] in its own
+output, so the logo is a symbol the product uses.
 """
 import subprocess
 from pathlib import Path
@@ -79,7 +79,7 @@ github.com/pawankumar94/nocontext</text>
 
   <g transform="translate(830 172)" \
 font-family="ui-monospace, SFMono-Regular, Menlo, monospace">
-    <text x="0" y="0" fill="{MUTE}" font-size="20">ungrounded rate</text>
+    <text x="0" y="0" fill="{MUTE}" font-size="20">top-1 routing miss</text>
     <text x="300" y="0" fill="{AMBER}" font-size="20" text-anchor="end" \
 font-weight="600">43%</text>
     <line x1="0" y1="24" x2="300" y2="24" stroke="{RULE}"/>
