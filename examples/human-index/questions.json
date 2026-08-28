@@ -1,0 +1,30 @@
+{
+  "note": "Hand-written, phrased the way someone asks rather than the way the documents phrase themselves. Written before any index existed, so no variant is favoured.",
+  "origin": "fixture",
+  "probes": [
+    { "question": "Do migrations run before or after the app deploy?", "expect": "docs/deploy-policy.md" },
+    { "question": "How long do we hold at 5% before going full?", "expect": "docs/deploy-policy.md" },
+    { "question": "Can I skip the staged rollout during an outage?", "expect": "docs/deploy-policy.md" },
+    { "question": "Who has to stay online while a release is going out?", "expect": "docs/deploy-policy.md" },
+
+    { "question": "What day does the pager change hands?", "expect": "docs/oncall.md" },
+    { "question": "If I'm secondary do I need to be at my desk?", "expect": "docs/oncall.md" },
+    { "question": "Can I swap a shift without asking anyone?", "expect": "docs/oncall.md" },
+
+    { "question": "How long do we keep customer data after they leave?", "expect": "docs/data-retention.md" },
+    { "question": "Someone asked us to delete their data, how long do we have?", "expect": "docs/data-retention.md" },
+    { "question": "Are traces backed up anywhere?", "expect": "docs/data-retention.md" },
+
+    { "question": "Why am I getting 429s?", "expect": "docs/rate-limits.md" },
+    { "question": "What happens if I keep retrying immediately?", "expect": "docs/rate-limits.md" },
+    { "question": "Is the quota per tenant or for the whole account?", "expect": "docs/rate-limits.md" },
+
+    { "question": "Does a degraded service page anyone at 3am?", "expect": "docs/incident-severity.md" },
+    { "question": "Can we downgrade an incident once it's open?", "expect": "docs/incident-severity.md" },
+    { "question": "Is data loss automatically the highest severity?", "expect": "docs/incident-severity.md" },
+
+    { "question": "When do invoices go out and when are they due?", "expect": "docs/billing.md" },
+    { "question": "What happens if I go over my allowance on the free plan?", "expect": "docs/billing.md" },
+    { "question": "Do I get money back if I downgrade halfway through the year?", "expect": "docs/billing.md" }
+  ]
+}
