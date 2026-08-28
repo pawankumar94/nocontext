@@ -382,14 +382,32 @@ These now have regression tests. This smoke test is implementation evidence,
 not Claim B or Claim C evidence. It did not use reviewed probes and does not
 satisfy the remaining three-corpus Phase 3 gate.
 
-The clean consumer install also found a packaging issue that the repository's
-own audit hides: npm does not propagate this package's `overrides`, so a
-tarball consumer receives vulnerable `onnxruntime-node`, `adm-zip`, and
-`sharp` versions selected by `@huggingface/transformers@4.2.0`. The CLI runs,
-but the consumer audit reports five high-severity findings. Do not publish the
-package in this state. A release must either use an upstream dependency graph
-that audits clean for consumers or replace the runtime; telling every user to
-copy our overrides is not an acceptable installation experience.
+**Resolved, 2026-08-28.** The clean consumer install found a packaging issue
+that this repository's own audit hides: npm does not propagate a dependency's
+`overrides` to whoever installs it, so a tarball consumer received vulnerable
+`onnxruntime-node`, `adm-zip`, and `sharp` versions selected by
+`@huggingface/transformers@4.2.0` — a real adm-zip DoS and inherited libvips
+CVEs, not theoretical. `npm audit` inside this repo reported clean while a
+packed-tarball install into a throwaway project reported 5 high-severity
+findings; the two genuinely disagree, and only the second is what a real
+installer sees.
+
+Fix: `@huggingface/transformers` moved from `dependencies` to an optional
+`peerDependencies` entry, and `src/retrievers/semantic.ts` now imports it
+dynamically. `npm install nocontext` alone pulls none of that subtree and
+audits clean, verified by packing a real tarball into `/tmp` and auditing
+there, not by trusting this repo's own `npm audit`. Without the peer
+dependency installed, `nocontext` still runs — lexical scoring only, with a
+warning naming the missing package and the exact install command. Semantic
+scoring becomes available the moment a consumer runs
+`npm install @huggingface/transformers` themselves, at which point *their*
+root `package.json` is what npm reads `overrides` from.
+
+CI gained a `consumer-audit` job that packs a tarball and audits it in a
+throwaway project on every push, specifically because this repo's own
+`npm audit` cannot catch a regression here — see CONTRIBUTING.md, "The
+optional semantic dependency", for the full record and the manual recheck
+command.
 
 **Kill/descope criterion:** if local semantic retrieval makes installation or
 first-run cost unacceptable, make it an explicit optional mode. If generated

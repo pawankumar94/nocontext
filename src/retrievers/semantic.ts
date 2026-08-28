@@ -1,9 +1,27 @@
-/** Local embedding retrieval. No API key and no document content leaves the machine. */
-import { pipeline, type FeatureExtractionPipeline } from "@huggingface/transformers";
+/**
+ * Local embedding retrieval. No API key and no document content leaves the
+ * machine.
+ *
+ * `@huggingface/transformers` is a peer dependency, not a hard one: its
+ * current release pulls onnxruntime-node and sharp versions with real,
+ * published advisories (an adm-zip DoS via onnxruntime-node, and libvips
+ * CVEs via sharp — see CONTRIBUTING.md). This package's own `overrides` patch
+ * those for local development, but npm does not propagate a dependency's
+ * overrides to whoever installs it, so a bare `npm install nocontext` must
+ * not pull that subtree in by default.
+ *
+ * The import is dynamic so the base install stays clean. `optional: true` on
+ * the exported retriever means analyze() degrades to lexical-only with a
+ * clear warning if the peer dependency is absent, instead of crashing the CLI.
+ */
 import type { Retriever } from "../core/types.js";
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- type-only, loaded dynamically at runtime
+type TransformersModule = typeof import("@huggingface/transformers");
+type FeatureExtractionPipeline = import("@huggingface/transformers").FeatureExtractionPipeline;
 
 export const SEMANTIC_MODEL = "Xenova/all-MiniLM-L6-v2";
 export const SEMANTIC_REVISION = "751bff37182d3f1213fa05d7196b954e230abad9";
+export const SEMANTIC_PACKAGE = "@huggingface/transformers";
 
 const WORDS_PER_CHUNK = 180;
 const OVERLAP_WORDS = 30;
@@ -11,11 +29,27 @@ const EMBED_BATCH_SIZE = 32;
 
 let extractorPromise: Promise<FeatureExtractionPipeline> | undefined;
 
+async function loadTransformers(): Promise<TransformersModule> {
+  try {
+    return (await import(SEMANTIC_PACKAGE)) as TransformersModule;
+  } catch (error) {
+    throw new Error(
+      `semantic scoring needs the optional peer dependency "${SEMANTIC_PACKAGE}", ` +
+      `which is not installed. Run: npm install ${SEMANTIC_PACKAGE}. ` +
+      "This dependency currently carries known transitive advisories (see " +
+      "CONTRIBUTING.md); installing it is a deliberate opt-in, not a default.",
+      { cause: error },
+    );
+  }
+}
+
 async function extractor(): Promise<FeatureExtractionPipeline> {
-  extractorPromise ??= pipeline("feature-extraction", SEMANTIC_MODEL, {
-    dtype: "int8",
-    revision: SEMANTIC_REVISION,
-  });
+  extractorPromise ??= loadTransformers().then((transformers) =>
+    transformers.pipeline("feature-extraction", SEMANTIC_MODEL, {
+      dtype: "int8",
+      revision: SEMANTIC_REVISION,
+    }),
+  );
   return extractorPromise;
 }
 

@@ -35,3 +35,25 @@ jobs:
             git diff --stat -- examples/
             exit 1
           fi
+
+  consumer-audit:
+    # A consumer installing this package must get a clean audit. npm audit run
+    # inside this repo does not catch a regression here: overrides in our own
+    # package.json apply at our root and hide what a real installer sees.
+    # See CONTRIBUTING.md, "The optional semantic dependency".
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run build
+      - run: npm pack --silent
+      - name: install the packed tarball into a throwaway project
+        run: |
+          mkdir -p /tmp/consumer-audit
+          cd /tmp/consumer-audit
+          npm init -y >/dev/null
+          npm install "$GITHUB_WORKSPACE"/nocontext-*.tgz
+          npm audit

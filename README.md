@@ -93,8 +93,16 @@ Save the first evaluation with `--json`, then pass it back with
 `--baseline before.json` after revising the surface. Incompatible runs are
 rejected instead of producing a misleading delta.
 
-The first semantic run downloads the pinned local MiniLM model. No API key is
-required. Follow the [probe workflow](docs/PROBES.md) and read the
+Lexical scoring (`bm25`) has zero dependencies beyond Node and audits clean —
+verify with `npm audit` after installing. Semantic scoring is an **explicit
+opt-in**: run `npm install @huggingface/transformers` yourself, and the first
+run then downloads the pinned local MiniLM model. No API key, no document
+content leaves the machine. Skip that install and `nocontext` still runs;
+semantic results are simply absent, with a warning saying why and how to add
+them. See [CONTRIBUTING.md](CONTRIBUTING.md#the-optional-semantic-dependency)
+for why this is opt-in rather than bundled by default.
+
+Follow the [probe workflow](docs/PROBES.md) and read the
 [measurement method](docs/METHOD.md#where-probe-questions-come-from) before
 trusting a score.
 

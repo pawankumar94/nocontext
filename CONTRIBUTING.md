@@ -22,7 +22,48 @@ npm run build
 npm test
 ```
 
-Requires Node 22 and, for regenerating fixtures, Python 3.
+Requires Node 22 and, for regenerating fixtures, Python 3. `npm ci` in this
+repo installs `@huggingface/transformers` as a devDependency, so the full
+test suite (including semantic retrieval) runs without an extra step.
+
+## The optional semantic dependency
+
+`@huggingface/transformers@4.2.0` is the current release and it declares
+`onnxruntime-node@1.24.3` and `sharp@^0.34.5`, which pull in versions with
+real, published advisories: an adm-zip denial-of-service via onnxruntime-node
+([GHSA-xcpc-8h2w-3j85](https://github.com/advisories/GHSA-xcpc-8h2w-3j85),
+crafted zip triggers a 4GB allocation) and inherited libvips CVEs via sharp
+([GHSA-f88m-g3jw-g9cj](https://github.com/advisories/GHSA-f88m-g3jw-g9cj)).
+
+This repository's `overrides` field patches both for local development, but
+`overrides` in a published package's `package.json` only takes effect for the
+project at the root of the install — npm does not propagate a dependency's own
+overrides to whoever installs that dependency. A consumer running
+`npm install nocontext` would silently inherit both vulnerable subtrees with
+no way to know from `nocontext`'s own audit, which looks clean because it runs
+at our root, not theirs.
+
+So `@huggingface/transformers` is a `peerDependencies` entry marked
+`optional` in `peerDependenciesMeta`, not a regular dependency, and
+`src/retrievers/semantic.ts` imports it dynamically. `npm install nocontext`
+alone pulls nothing from that subtree and audits clean — verified by packing a
+real tarball and installing it into a throwaway project, not just running
+`npm audit` inside this repo, since the two can disagree (they did, here).
+Semantic scoring is available only after a consumer explicitly runs
+`npm install @huggingface/transformers`, at which point *their* root
+`package.json` is what npm reads `overrides` from, and they can pin the same
+patched versions this repo uses if they choose to.
+
+If you touch `semantic.ts` or `package.json`'s dependency fields, rerun this
+check before merging — `npm audit` inside this repo does not catch a
+regression here, only auditing a packed tarball in a separate project does:
+
+```bash
+npm pack --silent
+mkdir -p /tmp/nocontext-audit && cd /tmp/nocontext-audit
+npm init -y >/dev/null && npm install /path/to/nocontext-*.tgz
+npm audit   # must report 0 vulnerabilities
+```
 
 ## The examples are a controlled experiment
 
