@@ -43,7 +43,14 @@ export interface Probe {
   question: string;
   /** One or more documents that actually answer it. */
   expect: string | string[];
-  origin: "supplied" | "generated" | "fixture";
+  /**
+   * `topic` is a fourth kind, weaker than the other three on purpose: a
+   * mechanical, no-model extraction of a document's own heading as a probe,
+   * used only when nothing better exists. It tests coverage (is this
+   * document linked at all), not realistic phrasing, and must never be
+   * described as a score without review. See core/probes/topic.ts.
+   */
+  origin: "supplied" | "generated" | "fixture" | "topic";
 }
 
 /** Anything that picks a document given a query. */

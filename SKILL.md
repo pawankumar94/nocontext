@@ -1,6 +1,6 @@
 ---
 name: nocontext
-description: Measure whether your AGENTS.md, CLAUDE.md, or docs index actually routes real questions to the right file. Use when someone asks to check, audit, lint, or improve how findable their instruction files or documentation are for an agent, or asks why an agent isn't using a doc that already answers something.
+description: Check whether AGENTS.md, CLAUDE.md, or a docs index actually routes real questions to the right file, and propose a source-backed fix. Use when someone asks to check, audit, lint, or improve their instruction files or documentation, when someone asks why an agent isn't using a doc that already answers something, or proactively after editing AGENTS.md, CLAUDE.md, or a docs index in a project that has one.
 allowed-tools: Bash, Read
 ---
 
@@ -8,63 +8,57 @@ allowed-tools: Bash, Read
 
 `nocontext` measures whether a navigation surface (`AGENTS.md`, `CLAUDE.md`,
 `README.md`, or a docs index) routes a real question to the document that
-answers it. It reports standard retrieval metrics (P@1, MRR, Recall@k), never
-a single number, and it does **not** claim that a better score makes an agent
-smarter — that causal question is open and explicitly unproven; see
-`docs/METHOD.md` in the [nocontext repo](https://github.com/pawankumar94/nocontext)
-if asked about it. Treat every score as a routing diagnostic, not a
-validated predictor of agent behavior.
+answers it. It does **not** claim that fixing this makes an agent smarter —
+that causal question is open and unproven; see `docs/METHOD.md` in the
+[nocontext repo](https://github.com/pawankumar94/nocontext) if asked. Treat
+every result as a routing check, not a validated predictor of agent
+performance.
+
+**You have an LLM. Use it to write real questions, not the tool's mechanical
+fallback.** The CLI's bare `nocontext .` mode exists for a human with no
+agent available, and it generates weak, mechanical probes from doc headings
+as a last resort. You can do better: read the document bodies yourself and
+write questions the way a contributor actually asks, which is exactly what
+the CLI's `--questions` flag and `docs/PROBES.md` are built for. Do this
+instead of relying on the bare zero-config path.
 
 ## When to use this
 
-- Someone asks to check, audit, or improve how well their `AGENTS.md` /
-  `CLAUDE.md` / docs actually route questions.
-- Someone asks why an agent didn't use a document that clearly answers a
-  question that was asked.
-- Someone wants to compare a navigation surface before and after an edit.
+- Someone asks to check, audit, or improve how their `AGENTS.md` / `CLAUDE.md`
+  / docs route questions.
+- Someone asks why an agent didn't use a document that clearly answers
+  something asked of it.
+- **Proactively**, after you edit `AGENTS.md`, `CLAUDE.md`, or a docs index in
+  a project that has one — a quiet check, only worth surfacing if it finds a
+  concrete miss. Don't run this after every unrelated edit; only after
+  changes to the navigation surface itself or the documents it points to.
 
-Do not reach for this to judge whether documentation is *accurate* or
-*complete* — it only measures whether a real question routes to the right
-file. A document can be perfectly correct and still score badly if its
-navigation entry doesn't share vocabulary with how people actually ask.
+Not for judging whether documentation is *accurate* or *complete* — only
+whether a real question routes to the right file. Correct content can still
+score badly if its navigation entry doesn't share vocabulary with how people
+actually ask.
 
-## Prerequisites
+## The workflow
 
-Requires a local clone of `nocontext`, built once:
+**1. Set up the tool**, once per session:
 
 ```bash
 git clone https://github.com/pawankumar94/nocontext /tmp/nocontext
 cd /tmp/nocontext && npm ci && npm run build
 ```
 
-If already available elsewhere (a prior clone, or once published, the
-`nocontext` binary on PATH), use that instead of re-cloning. Semantic
-scoring (`minilm-l6-v2`) is optional and requires
-`npm install @huggingface/transformers` in that same clone; skip it and the
-tool still runs lexical-only (`bm25`) with a warning, which is fine for a
+Reuse a prior clone if one exists on this machine. Semantic scoring
+(`minilm-l6-v2`) is optional (`npm install @huggingface/transformers` in that
+clone); skip it and lexical-only (`bm25`) still runs, which is enough for a
 quick check.
 
-## Running it
+**2. Read the document bodies the surface is meant to cover — never the
+surface itself yet.** Generating questions from the navigation surface and
+then testing that surface against them is circular; it flatters every
+corpus. Look only at the actual `.md` files under the scope you're checking.
 
-You need real questions — a routing score without credible questions isn't
-useful. Never generate questions from the navigation surface you're about to
-score; that's circular and flatters every corpus. Write questions from the
-document bodies instead, phrased the way a person actually asks, or ask the
-user for real ones (support threads, issue discussions, contributor
-questions) if they have them.
-
-```bash
-node /tmp/nocontext/dist/surfaces/cli.js <path-to-repo> \
-  --surface AGENTS.md \
-  --include docs --include CONTRIBUTING.md \
-  --questions /tmp/probes.json \
-  --evaluate
-```
-
-`--surface` picks the navigation file; omit it to auto-detect
-(`AGENTS.md` → `CLAUDE.md` → `index.md` → `README.md`). `--include` scopes
-the corpus — always set it explicitly on a monorepo, or the full-text
-reference becomes meaningless. `--questions` takes a JSON file:
+**3. Write 6–15 real questions**, the way a contributor actually asks, not
+the way the document phrases itself:
 
 ```json
 {
@@ -75,37 +69,51 @@ reference becomes meaningless. `--questions` takes a JSON file:
 }
 ```
 
-Use `--diagnose` instead of `--evaluate` when the goal is to find and fix
-gaps: it shows source-grounded vocabulary the navigation entry is missing.
-Never use `--diagnose` output to report a score — it exists to produce edit
-suggestions, not evidence, and mixing the two misrepresents what was proven.
-Keep a separate held-out question set for `--evaluate` if a fix is going to
-be verified afterward; scoring an index against the same questions used to
-fix it is training-set evaluation, not evidence that navigation improved.
+Keep only questions with a direct, unambiguous answer in the named document.
+Drop heading lookups and trivia. Write this to a temp file, e.g.
+`/tmp/probes.json`.
 
-## Reading the output
+**4. Run diagnose**, which shows vocabulary gaps without treating anything as
+a held-out score:
 
-Every run reports three numbers together — never quote one alone:
+```bash
+node /tmp/nocontext/dist/surfaces/cli.js <path-to-repo> \
+  --include docs \
+  --questions /tmp/probes.json \
+  --diagnose
+```
 
-- **floor** — what random guessing would score, given the corpus size
-- **observed** — routing using only the navigation surface
-- **full-text reference** — routing with entire documents available, same retriever
+Omit `--surface` to auto-detect (`AGENTS.md` → `CLAUDE.md` → `index.md` →
+`README.md`). Always set `--include` explicitly on anything larger than a
+handful of files, or the full-text reference becomes meaningless.
 
-The gap between observed and the full-text reference is what an index rewrite
-can fix. If the full-text reference itself is low, the answer isn't
-reachable by this retriever at all — say so, and don't imply a rewrite will
-help.
+**5. Translate the output for the user. Do not show them the raw CLI
+output.** They should never see `P@1`, `MRR`, floor/ceiling, or retriever
+names unless they specifically ask for the underlying numbers. Report it the
+way the tool's own miss list already frames it — a hit, a gold document, and
+the words to add:
 
-Report the numbers plainly, name specific unreachable questions and their
-expected documents (shown under "unreachable" in the CLI output), and pass
-along any warnings the tool prints — including a keyword-stuffing or
-probe-leakage warning if one fires, which means the result may be gamed
-rather than genuine.
+> `AGENTS.md` doesn't point to `docs/deploy-policy.md`, which covers
+> migration ordering. A question about that currently routes to `README.md`
+> instead. Add "migrations" and "deploy order" to the `AGENTS.md` entry for
+> that doc — want me to?
+
+If nothing was found, say so briefly and move on; don't manufacture a finding
+to justify having run the check.
+
+**6. If you edit the surface to fix it**, keep the questions you diagnosed
+with separate from any you'd use to confirm the fix. Scoring an index against
+the same questions used to build it is training-set evaluation, not evidence
+the fix generalizes. If the user wants a defensible before/after number (for
+a PR description, for CI), that's `--evaluate` with a held-out set and
+`--baseline` against a prior `--json` run — see `docs/PROBES.md` — and it's
+fine to walk them through that explicitly, since at that point they've asked
+for the score, not just the fix.
 
 ## What not to claim
 
-Never tell a user that a `nocontext` score means their agent will hallucinate
-less, ground more answers, or perform better in production. That correlation
-is an open research question this project has not yet answered. The honest
-claim is narrower: *this navigation surface does or doesn't route this
-specific set of questions to the right document, under this retriever.*
+Never tell a user that a `nocontext` result means their agent will
+hallucinate less, ground more answers, or perform better in production. That
+correlation is an open research question this project hasn't answered yet.
+The honest claim is narrower: *this navigation surface does or doesn't route
+this question to the document that answers it.*

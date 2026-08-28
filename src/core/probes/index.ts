@@ -13,7 +13,7 @@ export function validateProbes(docs: Doc[], probes: Probe[]): string[] {
   for (const [index, probe] of probes.entries()) {
     const label = `probe ${index + 1}`;
     const question = probe.question.trim();
-    if (!(["supplied", "generated", "fixture"] as unknown[]).includes(probe.origin)) {
+    if (!(["supplied", "generated", "fixture", "topic"] as unknown[]).includes(probe.origin)) {
       errors.push(`${label} has invalid origin ${String(probe.origin)}`);
     }
     if (!question) errors.push(`${label} has an empty question`);

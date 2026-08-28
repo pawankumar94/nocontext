@@ -35,11 +35,16 @@ route that question to the right file, the agent misses it — sometimes
 silently, sometimes not; see [Project status](#project-status) for what's
 actually proven about that.
 
-`nocontext` measures the routing gap directly: point it at a corpus and a set
-of real questions, and it reports whether your map gets an agent to the
-right document, using the same retrieval metrics published research on agent
-context-acquisition uses (P@1, MRR, Recall@k — see
-[How scoring works](#how-scoring-works)).
+`nocontext` finds those mismatches, and it has two modes on purpose:
+
+| | command | for | promise |
+|---|---|---|---|
+| **Assist** | `nocontext .` | anyone, no setup | a miss list: what a question hits, what it should hit, which words to add. Never a score. |
+| **Verify** | `nocontext . --questions held-out.json --evaluate` | CI, defensible numbers | the same retrieval metrics published research on agent context-acquisition uses (P@1, MRR, Recall@k — see [How scoring works](#how-scoring-works)) |
+
+Assist mode is the default and needs nothing from you but a repo. Verify mode
+is the full protocol — held-out probes, frozen extractors, rejected
+comparisons — and it's still there, just not the only door in.
 
 ## Project status
 
@@ -48,49 +53,80 @@ exactly what that means, so you can decide if it's useful to you today.
 
 | | |
 |---|---|
-| **What works** | A CLI that scores a real corpus against real questions, with lexical (BM25) and optional local semantic (MiniLM) retrieval, diagnose/evaluate modes, and before/after comparison. [38 tests](.github/workflows/ci.yml) passing. |
+| **What works** | Two CLI modes: zero-config assist mode (`nocontext .`, no probes needed, a miss list from mechanical topic checks) and the full verify protocol (lexical + optional local semantic retrieval, diagnose/evaluate, before/after comparison). [43 tests](.github/workflows/ci.yml) passing. |
 | **What's proven** | The effect replicates: rewriting a navigation surface in retrieval-friendly vocabulary measurably improves routing, on a fixture built to show it *and* on three real, unmodified repos nobody selected to prove a point (Codex, NVIDIA NVCF, Vercel AI SDK — [`validation/phase4/`](validation/phase4/), lexical P@1 improved +33 to +83 points on held-out questions). |
 | **What's *not* proven yet** | That a better `nocontext` score causes an agent to actually ground more answers, or explore less, on real tasks. That's [Phase 4b](PLANNER.md#phase-4b--does-it-change-what-a-real-agent-does-still-open) — a single-repo test, not started. Treat every score today as a routing diagnostic, not a validated agent-performance predictor. |
 | **Coding-agent integrations** | **`SKILL.md` in progress** (Claude Code, Cursor, Codex, Hermes — see [Integrations](#integrations)). No MCP server, GitHub Action, or npm package yet; those are gated on Phase 4. Until the skill lands, `nocontext` is a CLI you clone, build, and run by hand. |
 
-If you want a tool that plugs into your coding agent right now, this isn't
-that yet. If you want to measure whether your `AGENTS.md` actually routes the
-questions your contributors ask, that works today — see [Quickstart](#quickstart).
+If you want a tool that plugs into your coding agent right now (an MCP
+server, an automatic check inside Claude Code or Cursor), this isn't that
+yet — see [Integrations](#integrations). If you want to see whether your
+`AGENTS.md` actually routes real questions, that works today with zero
+setup — see [Quickstart](#quickstart).
 
 ## Quickstart
 
 ```bash
 git clone https://github.com/pawankumar94/nocontext && cd nocontext
 npm ci && npm run build
-node dist/surfaces/cli.js examples/retrieval-index
+node dist/surfaces/cli.js examples/no-index
 ```
 
 ```text
-$ node dist/surfaces/cli.js examples/retrieval-index --evaluate
+$ nocontext examples/no-index
 
-  evaluate run · surface: index.md
-  lexical  bm25@1.0.0
-  top-1 routing miss    47%  (1 - P@1)
-  observed (index)      53% P@1
-  full-text reference   74% P@1
+  surface   file tree (no navigation file found)  (auto)
+  6 topic probes from doc headings — mechanical, not real questions. See below.
+  top-1 miss  1/6
 
-  semantic  minilm-l6-v2@1.0.0+751bff3
-  top-1 routing miss     5%  (1 - P@1)
-  observed (index)      95% P@1
-  full-text reference   95% P@1
+  [ ] "On-call rotation"
+      hit nothing, gold is docs/oncall.md
+      add: on-call, rotation
+
+  These are mechanical topic checks, not real questions a person would ask.
+  Review or replace them at examples/no-index/nocontext-topic-probes.json, then get a comparable score with:
+    nocontext . --questions examples/no-index/nocontext-topic-probes.json --evaluate
 ```
 
-Real output from a real run against a bundled example corpus — not a mockup.
-The full output also includes the random floor, MRR, Recall@3, Recall@5,
-individual misses, warnings, and exact retriever versions.
+That's real, unedited output from a real run — no flags, no probe file you
+had to write first. `nocontext` auto-detected there's no navigation file,
+generated its own mechanical topic probes from the doc headings (never a
+real question, and it says so), and found one: nothing in this corpus routes
+to `docs/oncall.md`. It also wrote those probes to disk so you can read,
+edit, or throw them away.
 
-Not on npm yet. Once it is, this becomes `npx nocontext ./docs`.
+Not on npm yet. Once it is, this becomes `npx nocontext .`.
 
 ## Usage
 
-Point it at your own repository. You need reviewed questions — a routing
-score without credible questions isn't useful; see the
-[probe workflow](docs/PROBES.md) for how to write and review them.
+### Assist mode — the default, for a maintainer on a Sunday night
+
+```bash
+node dist/surfaces/cli.js .
+```
+
+No flags needed. It auto-detects a navigation surface (`AGENTS.md` →
+`CLAUDE.md` → `index.md` → `README.md`, or the file tree if none exists),
+generates mechanical topic probes from your own doc headings, and prints a
+miss list: what a probe hits, what it should hit, and which words to add. It
+never prints a metrics table and never calls itself a score — see
+[the topic-probe caveat](docs/PROBES.md) for exactly why that distinction
+matters.
+
+If you have real questions (support threads, issue titles, things
+contributors actually asked), pass them and skip topic-probe generation
+entirely:
+
+```bash
+node dist/surfaces/cli.js . --questions real-questions.json
+```
+
+### Verify mode — for CI and a defensible score
+
+The full protocol this project was built around: held-out probes, dual
+retrievers, frozen extractors, rejected incompatible comparisons. This is
+what makes a `nocontext` number worth trusting, and it's still exactly as
+strict as before — it's just no longer the only door in.
 
 ```bash
 # Diagnose: see source-grounded vocabulary gaps, using development questions
@@ -111,26 +147,27 @@ node dist/surfaces/cli.js . --surface AGENTS.md \
 
 | flag | does |
 |---|---|
-| `--surface <file>` | navigation file to score, e.g. `AGENTS.md`. Auto-detects `AGENTS.md` → `CLAUDE.md` → `index.md` → `README.md` if omitted. |
+| `--surface <file>` | navigation file to score, e.g. `AGENTS.md`. Auto-detects if omitted. |
 | `--include <path>` | document file or directory to include in the corpus. Repeatable. Scope large monorepos with this. |
-| `--questions <file>` | reviewed probes. Required — see [`docs/PROBES.md`](docs/PROBES.md). |
+| `--questions <file>` | real or reviewed probes. Skips topic-probe generation. Required for `--diagnose`/`--evaluate`. |
 | `--diagnose` | shows source-grounded edit suggestions from development questions. Cannot drive a CI threshold. |
-| `--evaluate` | scores held-out questions, never leaks suggestions. Default mode. |
+| `--evaluate` | scores held-out questions with full metrics, never leaks suggestions. |
 | `--baseline <file>` | compares this evaluate run against a prior `--json` run. Rejects incompatible comparisons instead of producing a misleading delta. |
-| `--fail-under <pct>` | exit 1 when lexical P@1 falls below this. Evaluate mode only. |
+| `--fail-under <pct>` | exit 1 when lexical P@1 falls below this. Requires `--evaluate` — a topic-probe run can never gate a build. |
 | `--json` | full run record: probes, per-probe outcomes, retriever versions. |
 
 If no navigation surface exists at all, the file tree is scored and labelled
 an implicit surface — not silently compared 1:1 against a corpus that has a
 real index.
 
-**Semantic scoring is opt-in.** `npm install @huggingface/transformers`
-yourself; the first run then downloads a pinned local MiniLM model, no API
-key, no document content leaves the machine. Skip it and `nocontext` still
-runs lexical-only, with a warning naming the missing package. It's opt-in
-because that dependency's current release carries real transitive advisories
-— see [CONTRIBUTING.md](CONTRIBUTING.md#the-optional-semantic-dependency) for
-the full reasoning and why the base install audits clean.
+**Semantic scoring is opt-in**, in both modes. `npm install
+@huggingface/transformers` yourself; the first run then downloads a pinned
+local MiniLM model, no API key, no document content leaves the machine. Skip
+it and `nocontext` still runs lexical-only, with a warning naming the missing
+package. It's opt-in because that dependency's current release carries real
+transitive advisories — see
+[CONTRIBUTING.md](CONTRIBUTING.md#the-optional-semantic-dependency) for the
+full reasoning and why the base install audits clean.
 
 ## Integrations
 

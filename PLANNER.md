@@ -148,9 +148,25 @@ If you think one is wrong, open an issue and argue it. Do not route around it.
   overlap, and task compliance. Do not turn `nocontext` into another general
   `AGENTS.md` score. It owns the question: can this navigation surface route a
   real question to the source that answers it?
-- **The default workflow must be safe to trust.** Weak generated questions,
-  unexplained scores, or a warning that only catches the bundled adversary are
-  worse than an explicit requirement for human-reviewed input.
+- **The default workflow must be safe to trust — but "require human review
+  before it runs at all" turned out to be the wrong mechanism for that,
+  not the goal itself.** Revised 2026-08-28 after a direct critique: the
+  original version of this rule made the CLI refuse to run without a
+  reviewed `--questions` file, which is a correct instinct pushed into the
+  wrong place. It meant `nocontext .` produced nothing but an error — no
+  maintainer will clone a tool, write two probe files with unmixed origins,
+  and learn P@1 before it's earned their trust. That's a study protocol, not
+  a linter, and it means nobody runs it. The goal was never "nothing runs
+  without review." It was "nothing unreviewed gets mistaken for a score."
+  Those are different requirements, and the second one is satisfiable while
+  still running by default. See `docs/PROBES.md` and the `Probe.origin:
+  "topic"` type: mechanical, no-model probes now run with zero setup, and the
+  output is structurally prevented from being mistaken for evidence — labeled
+  "mechanical, not real questions" in every line, never permitted to drive
+  `--fail-under`, and every run ends by pointing at the reviewed-questions
+  path instead. Weak generated questions are still not allowed to produce an
+  unexplained score. They are now allowed to produce a visibly-caveated miss
+  list, which is what most users will actually run.
 
 ### Measurement
 
@@ -510,36 +526,47 @@ that a bigger sample would find what a real single case didn't.
 "benchmark" in public.** Phase 4a's replication is real evidence toward
 Claim A. It is not yet a finding about Claim B.
 
-### The skill — parallel, not gated on Phase 4
+### The skill and assist mode — parallel, not gated on Phase 4
 
-Unlike everything else in Phase 5, **a `SKILL.md` at the repo root does not
-need to wait.** It needs no MCP server: a skill can tell an agent to invoke
-the existing CLI directly via `Bash`, and that CLI already works. Confirmed
-before committing to this: Cursor's own docs state it "also loads skills from
+Unlike everything else in Phase 5, **`SKILL.md` and a zero-config CLI mode
+don't need to wait.** Neither needs an MCP server. Confirmed before
+committing to the skill: Cursor's own docs state it "also loads skills from
 Claude and Codex directories," and Hermes Agent independently documents
-support for the identical `SKILL.md` format. One file, four target clients,
-zero dependency on Phase 4's outcome, because the skill doesn't claim
-anything about agent grounding — it just runs the tool and shows the score.
+support for the identical `SKILL.md` format. One file, four target clients.
 
-**Build, can start now:**
+**Built, 2026-08-28, after a direct critique that the CLI's default path was
+a study protocol, not a linter — verified against the actual CLI output
+before agreeing, not just conceded:**
 
-- [ ] `SKILL.md` at repo root — frontmatter (`name`, `description`,
-      `allowed-tools: Bash`), body teaches an agent to run
-      `node dist/surfaces/cli.js` (or `nocontext` once published) against a
-      corpus and read the output, including when to use `--diagnose` vs.
-      `--evaluate`
-- [ ] `.claude-plugin/plugin.json` — optional, adds version/author metadata;
-      auto-discovery works without it
-- [ ] Verify auto-discovery actually loads it: no `skills/` directory, no
-      manifest `skills` field, single `SKILL.md` at root per the documented
-      Claude Code convention
+- [x] **Assist mode**: bare `nocontext <dir>` with no flags auto-detects the
+      surface, generates mechanical `origin: "topic"` probes from doc
+      headings (no model, coverage-only, labeled as such in every line of
+      output), and prints a miss list — never a metrics table, never
+      something `--fail-under` can gate on. `src/core/probes/topic.ts`,
+      `src/report/assist.ts`.
+- [x] `SKILL.md` at repo root, auto-discovery layout confirmed (no
+      `skills/` dir, no manifest). Rewritten to have the agent write real
+      questions itself from doc bodies — better than the mechanical
+      fallback, since an agent using the skill already has the LLM
+      capability the bare CLI doesn't — run the full diagnose workflow, and
+      report findings in plain language. The user should never see `P@1`,
+      `MRR`, or a retriever name unless they ask for the raw numbers.
+- [ ] `.claude-plugin/plugin.json` — optional metadata, not yet added.
+- [ ] Live-loaded and tested inside an actual running Claude Code, Cursor, or
+      Codex session — verified so far only that the CLI commands the skill
+      tells an agent to run actually work, not that the skill itself loads
+      and is invoked correctly by a live client.
 
-**Evidence required:**
+**Evidence required, updated:**
 
-| required | how to check |
+| required | status |
 |---|---|
-| Loads in at least 2 of {Claude Code, Cursor, Codex, Hermes} without edits | manual load test in each |
-| An agent given only the skill (no prior conversation context) runs the tool correctly on a real corpus | fresh session test |
+| `nocontext <dir>` with zero flags prints a real miss list, not an error | ✅ tested, `src/assist.test.ts` |
+| Assist output never contains IR jargon (P@1, MRR, floor, ceiling) | ✅ tested |
+| `--fail-under` is rejected outside `--evaluate` | ✅ tested |
+| Supplying `--questions` fully opts out of topic-probe generation | ✅ tested |
+| Loads in at least 2 of {Claude Code, Cursor, Codex, Hermes} without edits | **not yet done** — needs a live client, not just command verification |
+| An agent given only the skill (no prior conversation context) runs the tool correctly on a real corpus | **not yet done** |
 | The skill never claims the score predicts agent grounding | re-read against Phase 4's actual status before every edit |
 
 ### Phase 5 — Make it reach people
@@ -602,7 +629,8 @@ reading `PLANNER.md`, `METHOD.md`, or asking a question.
 | **The finding** | **does a routing fix change real agent grounding or exploration cost** | **phase 4b — not started, the actual remaining deliverable** |
 | GitHub Action | fails a build when findability drops | phase 5, gated on phase 4 |
 | MCP server | published to the official MCP registry, works in any MCP client | phase 5, gated on phase 4 |
-| **Agent skill** | **`SKILL.md`, cross-loads in Claude Code, Cursor, Codex, Hermes** | **not gated — can start now, runs the CLI directly** |
+| Assist mode | zero-config `nocontext .` miss list, no probes needed | not gated — done |
+| **Agent skill** | **`SKILL.md`: real agent-written questions, plain-language findings, cross-loads in Claude Code, Cursor, Codex, Hermes** | **not gated — built, not yet live-tested in a real client** |
 
 The finding in Phase 4 is the actual deliverable. Every surface in Phase 5
 except the skill is a way to act on that finding, and none of them are worth
