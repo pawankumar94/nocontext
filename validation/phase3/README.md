@@ -66,8 +66,15 @@ do not commit an edited copy of a third-party corpus here.
 An agent fact-checked all 36 probes against the pinned source commits and
 found none factually wrong, unanswerable, or trivia. Full record:
 [`agent-review-2026-08-28.md`](agent-review-2026-08-28.md). **This is not the
-review this packet requires** — it is a verification pass, not the human
+review this packet requires**. It is a verification pass, not the human
 blind judgment below, and it does not substitute for filling this log.
+
+## Maintainer plausibility dogfood
+
+The project maintainer marked plain-language paraphrases of all 36 candidates
+as plausible real-work questions. Full record:
+[`maintainer-plausibility-2026-08-28.md`](maintainer-plausibility-2026-08-28.md).
+This is a usability check, not the required blind source-document review.
 
 ## Blind-review log
 
