@@ -250,18 +250,17 @@ Generated from `examples/source/` by `examples/build.py`.
   criteria before any of the 8–12 repos were picked, which is the entire
   reason the pilot was worth running before the expensive version.
 
-**In progress:** Phase 3. The implementation pieces pass locally. The phase is
-not complete until reviewed probes and held-out improvements are demonstrated
-across three real corpora. Phase 4 and all Phase 5 distribution remain unstarted.
+**In progress:** Phase 3's human blind review (open) and Phase 4b (not
+started). Phase 4a is done — see below. Phase 5 distribution remains
+unstarted and gated on Phase 4b.
 
-**Current development checkpoint, 2026-08-28:** `pointer-block@1` is now the
-frozen extractor for Phase 3. The repository is at the evidence gate: blind
-review the 36 body-only candidate probes, retain at least 20 across all three
-corpora, classify each accepted question as a coverage or vocabulary case, use
-only development misses to revise each navigation surface, and measure the
-locked held-out change. Do not begin Phase 4 from the current tree. npm
-distribution is separately blocked by the clean-consumer audit described in
-Phase 3.
+**Current development checkpoint, 2026-08-28:** `pointer-block@1` is the
+frozen extractor. Phase 4a ran ahead of Phase 3's human review closing,
+using the same 36 probes at their agent-fact-checked status — that ordering
+is a deliberate tradeoff (real-repo evidence now, while the harder human-only
+gate stays open) and is stated as a limitation in `validation/phase4/README.md`,
+not hidden. Phase 3 itself is still open pending that review. npm distribution
+is separately blocked by the clean-consumer audit described in Phase 3.
 
 **Review material prepared, not yet accepted:**
 `validation/phase3/` pins 36 candidate generated development and held-out
@@ -417,71 +416,99 @@ questions cannot pass blind review without a capable host agent, require
 supplied questions in the CLI and let the eventual skill provide generation.
 Do not ship weak questions to preserve a zero-config claim.
 
-### Phase 4 — Prove the score predicts something real
+### Phase 4a — Does the effect replicate on real repos? ✅ DONE, 2026-08-28
 
-**This is the phase that decides whether the project continues.** Everything
-before it demonstrates a mechanism on a corpus built to show it. This is the
-first test against reality, and it is explicitly allowed to fail.
+The original Phase 4 below was scoped as a preregistered, multi-condition
+causal study before checking two things first: whether a public dataset could
+substitute for building one, and whether a smaller test was possible at all.
+Neither check happened before the design was written, which is a real
+sequencing mistake, not a difference of opinion. Corrected here.
+
+**Public-data check, done properly before any of this ran:** ContextBench and
+Agent Retrieval Bench are genuinely public and downloadable — verified, not
+assumed. Both measure code-context retrieval for bug-fixing (SWE-bench-shaped:
+which source files and functions does an agent need to patch an issue). Not
+what this tool measures. `nocontext` tests whether a documentation navigation
+surface routes a real question to the document that answers it. No public
+dataset tests that axis. This is why Phase 4 needs new data, not a shortcut
+that turned out not to exist.
+
+**What ran instead of the mega-study:** the three real, pinned repos already
+prepared for Phase 3 (Codex, NVCF, Vercel AI SDK — see
+`validation/phase3/README.md`), each repo's real, unedited navigation surface,
+`--diagnose` against development probes to get the tool's own source-grounded
+suggestions (the documented workflow, not hand-authored prose), a local edit
+applied only to a `/tmp` checkout (never committed — these are third-party
+repos), and `--evaluate` plus `--baseline` against the untouched held-out set.
+Full method, raw JSON for all six runs, and the exact patches applied:
+`validation/phase4/README.md`.
+
+**Result — held-out P@1, `--baseline`-computed, not hand-calculated:**
+
+| repo | lexical delta | semantic delta | fix type |
+|---|---:|---:|---|
+| Codex | 0% → 83% | 67% → 83% | vocabulary + one missing link |
+| NVCF | 0% → 50% | 0% → 67% | coverage — target docs were 2 hops deep, never linked |
+| Vercel AI | 17% → 50% | 83% → 83% | vocabulary only |
+
+Claim A's effect replicates in the same direction on three real repositories
+nobody selected or wrote to prove a point. That's real, new evidence beyond
+the hand-built fixture and the one pilot repo.
+
+**What this does not close, stated as plainly as the result itself:**
+
+- **Not Claim B.** This is routing under two retrievers, not agent behavior.
+  Whether a real agent grounds more or explores less because of this is still
+  open — see Phase 4b below.
+- **A contamination limitation specific to this run.** The same session that
+  fact-checked all 36 probes, including every held-out question, also wrote
+  the rewrites. The held-out set wasn't consulted while writing them, but that
+  is not the same guarantee a genuinely separate party's blindness would give.
+  Flagged prominently in `validation/phase4/README.md`, not smoothed over.
+- **Probe review status unchanged.** Agent fact-checked, not yet
+  independently human-reviewed — Phase 3's gate is still open.
+- **Six probes per repo.** The tool's own output says so: indicative, not
+  a large-N result. Consistent direction across three repos is the strongest
+  claim this supports, not a precise effect size.
+- **A real methodological wrinkle, not hidden:** in two of three repos, the
+  semantic *observed* score beat the semantic *full-text reference*. A
+  concise navigation entry outscoring the entire source document under
+  embedding search is unexpected, plausibly from chunking-and-mean-pooling
+  diluting long documents. Offered as a hypothesis, not a checked fix. It
+  means the semantic ceiling isn't always reliable ground truth.
+
+### Phase 4b — Does it change what a real agent does? Still open.
+
+The actual causal question. Smaller and more honest in scope than the
+original design: not a preregistered multi-repo study up front, but a bounded
+next step now that Phase 4a gives real routing evidence to test against.
 
 **Build:**
 
-- [ ] Write and commit the study protocol before collecting outcomes. Name the
-      primary metric, minimum useful effect, access conditions, corpus-size
-      strata, repeat count, grading rule, exclusions, and analysis method.
-- [ ] Select 8–12 real public repositories using the criteria below. They must
-      not be written by this project or selected because they look good or bad.
-- [ ] For each repository, freeze the documents and construct 10–15 questions
-      before either experimental index exists. A question may name more than
-      one relevant document when the corpus has overlapping answers.
-- [ ] Create paired navigation surfaces: the repository's as-is surface and a
-      retrieval-oriented rewrite. Documents and questions stay byte-identical.
-- [ ] Run `nocontext` on both surfaces. Report lexical and semantic P@1, MRR,
-      Recall@k, floor, and ceiling separately. There is no blended score.
-- [ ] Randomize question and surface assignment for an actual agent, repeat
-      stochastic runs, and grade blind. Record source use, answer correctness,
-      files opened, tool calls, tokens, and latency for every run.
-- [ ] Estimate the within-repository treatment effect of the rewritten surface.
-      Then run the cross-repository score correlation as secondary evidence.
-
-**Repo selection criteria, fixed before outcomes:**
-
-- Include both small and large corpora. Small, freely explorable corpora are
-  the preregistered negative-control stratum, not grounds for exclusion.
-- Cross free filesystem access with at least one constrained condition:
-  rank-based retrieval, or an explicit token, tool-call, or latency budget.
-- Record corpus size in files and tokens. The protocol must define the stratum
-  boundaries before any outcome run is inspected.
-- Use real, maintained documentation. Do not use a stub `AGENTS.md`, or choose
-  a repository because its docs already look obviously bad or obviously good.
+- [ ] Pick one of the three Phase 4a repos (NVCF's coverage gap is the
+      sharpest case: 0% lexical routing to docs genuinely never linked).
+- [ ] Run a real agent (Claude Code or Codex) against the as-is surface and
+      the revised surface, same held-out questions, and record per question:
+      did it ground its answer in the real document, and how much did it
+      explore to get there (files opened, tool calls).
+- [ ] Only after this single-repo test says something is worth widening does
+      a bigger, multi-repo version become the next step — not before.
 
 **Evidence required:**
 
-| required | why it's the actual gate |
+| required | why |
 |---|---|
-| Preregistered protocol committed before outcome collection | stops thresholds, exclusions, and endpoints moving after the result is visible |
-| Paired treatment effect on grounding and exploration cost, with uncertainty | this is the causal test the old cross-repository correlation could not provide |
-| Lexical and semantic predictor coefficients, reported separately | tests Claim B without inventing a blended `nocontext` score |
-| Interaction by corpus size and access condition | measures the pilot boundary instead of filtering it away |
-| Per-run raw data, questions, qrels, prompts, index variants, transcripts, and cost traces published | makes every disputed grade and score reproducible |
-| Sensitivity check with a different question author, agent, and retriever | one configuration is an anecdote |
+| Per-question grounding outcome and exploration cost, both surfaces | this is the test Phase 4a cannot provide by itself |
+| Raw transcripts published alongside the summary | so a disputed grade is checkable |
 
-**Success criterion:** the preregistered paired analysis finds either better
-grounding, or lower exploration cost without worse answer quality, in at least
-one boundary condition, and the held-out predictive analysis points in the
-same direction. The result must include uncertainty and raw data, not only a
-positive point estimate.
+**Kill criterion, unchanged in spirit from the original design:** if the
+revised surface changes neither grounding nor exploration cost on this one
+repo, say so in `METHOD.md` and do not scale the test up on the assumption
+that a bigger sample would find what a real single case didn't.
 
-**Kill criterion, stated explicitly so it isn't dodged later:** if the paired
-intervention changes neither grounding nor exploration cost across the
-preregistered conditions, **say so publicly, in `METHOD.md`, and stop building
-distribution surfaces.** A routing score that predicts neither outcome is a
-toy. If it changes cost but not grounding, position the product as an
-efficiency diagnostic. If it changes grounding only under ranked or budgeted
-access, position it as a retrieval-surface audit. Those branches are fixed now,
-before Phase 4, rather than invented after seeing its result.
-
-**Only past this gate does any output get called a "finding" or a "benchmark"
-in public.**
+**Only past this gate does any output get called a "finding" or a
+"benchmark" in public.** Phase 4a's replication is real evidence toward
+Claim A. It is not yet a finding about Claim B.
 
 ### The skill — parallel, not gated on Phase 4
 
@@ -571,7 +598,8 @@ reading `PLANNER.md`, `METHOD.md`, or asking a question.
 | Library | `import { analyze } from "nocontext"` | phase 1 — done |
 | CLI | `node dist/surfaces/cli.js ./docs` (→ `npx nocontext` later) | phase 2 — done |
 | Anti-gaming | direct leakage detection + held-out evaluation workflow | phase 3 — in progress |
-| **The finding** | **published paired effect on grounding and exploration cost, plus predictive correlation** | **phase 4 — not started, the actual deliverable** |
+| Routing replication | vocabulary/coverage effect confirmed on 3 real repos, not just a fixture | phase 4a — done |
+| **The finding** | **does a routing fix change real agent grounding or exploration cost** | **phase 4b — not started, the actual remaining deliverable** |
 | GitHub Action | fails a build when findability drops | phase 5, gated on phase 4 |
 | MCP server | published to the official MCP registry, works in any MCP client | phase 5, gated on phase 4 |
 | **Agent skill** | **`SKILL.md`, cross-loads in Claude Code, Cursor, Codex, Hermes** | **not gated — can start now, runs the CLI directly** |

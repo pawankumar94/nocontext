@@ -1,0 +1,25 @@
+diff --git a/docs/user/index.md b/docs/user/index.md
+index 814711d7..7b14a6ff 100644
+--- a/docs/user/index.md
++++ b/docs/user/index.md
+@@ -11,6 +11,19 @@ This guide provides information for deploying and operating NVCF in self-managed
+ - [Configuration](./optional-enhancements.md)
+   : Configure gateway routing, registries, and optional enhancements.
+ - [Using Cloud Functions](./api.md)
+-  : Create and invoke functions using the NVCF API and CLI.
++  : Create and invoke functions using the NVCF API and CLI. Covers function
++  versions, container image updates, non-root container-user requirements,
++  Kubernetes Secrets for API keys instead of environment variables, and
++  Helm-chart orchestration across multiple containers vs. streaming support.
++  See [Function Creation](./function-creation.md) for the full reference.
++- [Allowlisting an Unsupported Registry](./registry-allowlist.md)
++  : Register a container image registry the NVCF API does not natively
++  recognize, so function creation stops failing with a missing-registry
++  error. Covers applying the Helm env vars, restarting the API deployment for
++  the change to take effect, and verifying the applied values when the API
++  container has no shell.
++- [Control Plane Operations](./control-plane-operations.md)
++  : Restarting NVCF services and StatefulSets, and verifying a rollout
++  completed.
+ - [Managed (Legacy)](../ngc-managed/cluster-management/ngc-managed.md)
+   : Documentation for the legacy NGC-managed NVCF platform (BYOC).

@@ -49,8 +49,8 @@ exactly what that means, so you can decide if it's useful to you today.
 | | |
 |---|---|
 | **What works** | A CLI that scores a real corpus against real questions, with lexical (BM25) and optional local semantic (MiniLM) retrieval, diagnose/evaluate modes, and before/after comparison. [38 tests](.github/workflows/ci.yml) passing. |
-| **What's proven** | On a corpus built to isolate the effect: rewriting a navigation surface in retrieval-friendly vocabulary measurably improves routing, same documents, same questions. [`examples/`](examples/) is the controlled experiment — rerun it yourself. |
-| **What's *not* proven yet** | That a better `nocontext` score causes an agent to actually ground more answers, or explore less, on real tasks. That's [Phase 4](PLANNER.md#phase-4--prove-the-score-predicts-something-real) — a preregistered study, not started. Treat every score today as a routing diagnostic, not a validated agent-performance predictor. |
+| **What's proven** | The effect replicates: rewriting a navigation surface in retrieval-friendly vocabulary measurably improves routing, on a fixture built to show it *and* on three real, unmodified repos nobody selected to prove a point (Codex, NVIDIA NVCF, Vercel AI SDK — [`validation/phase4/`](validation/phase4/), lexical P@1 improved +33 to +83 points on held-out questions). |
+| **What's *not* proven yet** | That a better `nocontext` score causes an agent to actually ground more answers, or explore less, on real tasks. That's [Phase 4b](PLANNER.md#phase-4b--does-it-change-what-a-real-agent-does-still-open) — a single-repo test, not started. Treat every score today as a routing diagnostic, not a validated agent-performance predictor. |
 | **Coding-agent integrations** | **`SKILL.md` in progress** (Claude Code, Cursor, Codex, Hermes — see [Integrations](#integrations)). No MCP server, GitHub Action, or npm package yet; those are gated on Phase 4. Until the skill lands, `nocontext` is a CLI you clone, build, and run by hand. |
 
 If you want a tool that plugs into your coding agent right now, this isn't

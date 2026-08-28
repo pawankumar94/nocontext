@@ -1,0 +1,25 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index da8a62fcc8..0a89d349c7 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -245,7 +245,10 @@ For a focused conceptual walkthrough of AI functions, model specifications, and
+   `baseURL`.
+ - Pass `credentialedOrigin` when a response URL may legitimately carry the API
+   key on its first hop, so credentials are withheld off-origin.
+-- See [contributing/secure-url-handling.md](contributing/secure-url-handling.md).
++- Deciding `validateUrl` true vs false when the URL is built only from a
++  configured base endpoint, and safely allowing a response URL that points
++  back to a private self-hosted endpoint (`trustedOrigin`): see
++  [contributing/secure-url-handling.md](contributing/secure-url-handling.md).
+ 
+ ### Adding New Packages
+ 
+@@ -259,7 +262,7 @@ For a focused conceptual walkthrough of AI functions, model specifications, and
+ | --------------------- | --------------------------------------- |
+ | Add new provider      | `contributing/add-new-provider.md`      |
+ | Add new model         | `contributing/add-new-model.md`         |
+-| Testing & fixtures    | `contributing/testing.md`               |
++| Testing & fixtures: manual test coverage for new features, saving embedding/streaming response fixtures, reducing large embedding vectors | `contributing/testing.md`               |
+ | Provider architecture | `contributing/provider-architecture.md` |
+ | Building new features | `contributing/building-new-features.md` |
+ | Codemods              | `contributing/codemods.md`              |

@@ -1,0 +1,235 @@
+{
+  "corpus": {
+    "root": "fs:/tmp/phase3-corpora/codex",
+    "docs": 15,
+    "fingerprint": "fnv1a64:7630f147497a0add"
+  },
+  "mode": "evaluate",
+  "surface": "explicit",
+  "surfaceSource": "README.md",
+  "surfaceExtractor": "pointer-block@1",
+  "surfaceCoverage": {
+    "described": 3,
+    "total": 15
+  },
+  "probes": {
+    "supplied": 0,
+    "generated": 6,
+    "fixture": 0
+  },
+  "lexical": {
+    "retriever": "bm25@1.0.0",
+    "floor": {
+      "p1": 0.06666666666666667,
+      "mrr": 0.22121526621526624,
+      "recall": {
+        "at1": 0.06666666666666667,
+        "at3": 0.2,
+        "at5": 0.3333333333333333
+      }
+    },
+    "observed": {
+      "p1": 0,
+      "mrr": 0,
+      "recall": {
+        "at1": 0,
+        "at3": 0,
+        "at5": 0
+      }
+    },
+    "ceiling": {
+      "p1": 1,
+      "mrr": 1,
+      "recall": {
+        "at1": 1,
+        "at3": 1,
+        "at5": 1
+      }
+    },
+    "outcomes": [
+      {
+        "probe": {
+          "question": "What is the minimum supported memory for a developer machine, and what amount is recommended?",
+          "expect": "docs/install.md",
+          "origin": "generated"
+        },
+        "picked": null,
+        "rank": null,
+        "hit": false
+      },
+      {
+        "probe": {
+          "question": "Which test runner does the repository's general test helper use?",
+          "expect": "docs/install.md",
+          "origin": "generated"
+        },
+        "picked": null,
+        "rank": null,
+        "hit": false
+      },
+      {
+        "probe": {
+          "question": "Where do non-interactive runs send their diagnostic messages by default?",
+          "expect": "docs/install.md",
+          "origin": "generated"
+        },
+        "picked": null,
+        "rank": null,
+        "hit": false
+      },
+      {
+        "probe": {
+          "question": "Why would a team keep the DotSlash executable definition in source control?",
+          "expect": "docs/install.md",
+          "origin": "generated"
+        },
+        "picked": "docs/open-source-fund.md",
+        "rank": null,
+        "hit": false
+      },
+      {
+        "probe": {
+          "question": "Which operating-system setup is supported for Windows development?",
+          "expect": "docs/install.md",
+          "origin": "generated"
+        },
+        "picked": null,
+        "rank": null,
+        "hit": false
+      },
+      {
+        "probe": {
+          "question": "Which environment variable controls Rust logging for the application?",
+          "expect": "docs/install.md",
+          "origin": "generated"
+        },
+        "picked": null,
+        "rank": null,
+        "hit": false
+      }
+    ]
+  },
+  "semantic": {
+    "retriever": "minilm-l6-v2@1.0.0+751bff3",
+    "floor": {
+      "p1": 0.06666666666666667,
+      "mrr": 0.22121526621526624,
+      "recall": {
+        "at1": 0.06666666666666667,
+        "at3": 0.2,
+        "at5": 0.3333333333333333
+      }
+    },
+    "observed": {
+      "p1": 0.6666666666666666,
+      "mrr": 0.8055555555555555,
+      "recall": {
+        "at1": 0.6666666666666666,
+        "at3": 1,
+        "at5": 1
+      }
+    },
+    "ceiling": {
+      "p1": 0.3333333333333333,
+      "mrr": 0.6018518518518519,
+      "recall": {
+        "at1": 0.3333333333333333,
+        "at3": 0.8333333333333334,
+        "at5": 0.8333333333333334
+      }
+    },
+    "outcomes": [
+      {
+        "probe": {
+          "question": "What is the minimum supported memory for a developer machine, and what amount is recommended?",
+          "expect": "docs/install.md",
+          "origin": "generated"
+        },
+        "picked": "docs/open-source-fund.md",
+        "rank": 2,
+        "hit": false
+      },
+      {
+        "probe": {
+          "question": "Which test runner does the repository's general test helper use?",
+          "expect": "docs/install.md",
+          "origin": "generated"
+        },
+        "picked": "docs/open-source-fund.md",
+        "rank": 3,
+        "hit": false
+      },
+      {
+        "probe": {
+          "question": "Where do non-interactive runs send their diagnostic messages by default?",
+          "expect": "docs/install.md",
+          "origin": "generated"
+        },
+        "picked": "docs/install.md",
+        "rank": 1,
+        "hit": true
+      },
+      {
+        "probe": {
+          "question": "Why would a team keep the DotSlash executable definition in source control?",
+          "expect": "docs/install.md",
+          "origin": "generated"
+        },
+        "picked": "docs/install.md",
+        "rank": 1,
+        "hit": true
+      },
+      {
+        "probe": {
+          "question": "Which operating-system setup is supported for Windows development?",
+          "expect": "docs/install.md",
+          "origin": "generated"
+        },
+        "picked": "docs/install.md",
+        "rank": 1,
+        "hit": true
+      },
+      {
+        "probe": {
+          "question": "Which environment variable controls Rust logging for the application?",
+          "expect": "docs/install.md",
+          "origin": "generated"
+        },
+        "picked": "docs/install.md",
+        "rank": 1,
+        "hit": true
+      }
+    ]
+  },
+  "findings": [],
+  "warnings": [
+    {
+      "kind": "sparse-surface",
+      "described": 3,
+      "total": 15,
+      "note": "The navigation surface describes 3 of 15 documents. Unlinked documents have no explicit map pointer; use --include if this surface is not responsible for all of them."
+    },
+    {
+      "kind": "low-ceiling",
+      "retriever": "minilm-l6-v2@1.0.0+751bff3",
+      "ceiling": 0.3333333333333333,
+      "note": "minilm-l6-v2@1.0.0+751bff3 full-text routing is below 50%. Its index score cannot separate a navigation problem from a retriever limitation."
+    },
+    {
+      "kind": "low-probe-count",
+      "probes": 6,
+      "note": "Fewer than 12 probes. The result is indicative at best."
+    }
+  ],
+  "lowConfidence": true,
+  "derived": {
+    "lexical": {
+      "routingMissRate": 1,
+      "mapGap": 1
+    },
+    "semantic": {
+      "routingMissRate": 0.33333333333333337,
+      "mapGap": -0.3333333333333333
+    }
+  }
+}
