@@ -16,6 +16,14 @@
     {
       "question": "Why would a team keep the DotSlash executable definition in source control?",
       "expect": "docs/install.md"
+    },
+    {
+      "question": "Which operating-system setup is supported for Windows development?",
+      "expect": "docs/install.md"
+    },
+    {
+      "question": "Which environment variable controls Rust logging for the application?",
+      "expect": "docs/install.md"
     }
   ]
 }

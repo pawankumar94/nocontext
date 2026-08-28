@@ -157,14 +157,17 @@ If you think one is wrong, open an issue and argue it. Do not route around it.
 - **Standard IR metrics, not an invented scale.** P@1, MRR, Recall@{1,3,5} —
   what ContextBench and ARB report. `RankMetrics` in `src/core/types.ts` is
   the only shape a `Measurement` may expose.
-- **Floor, observed, ceiling — always all three.** A bare percentage is
+- **Floor, observed, full-text reference: always all three.** A bare percentage is
   unreadable without corpus size behind it. `Measurement` has no field for a
   single headline number, on purpose.
-- **The ceiling is retriever-limited, not absolute.** Never describe it in
-  docs, code comments, or output as "what perfect navigation would achieve."
-  It is "what this retriever manages with the whole document available." An
-  earlier draft of `METHOD.md` got this wrong; it was corrected in the open
-  once Phase 1 running the numbers proved it wrong. Do not regress the wording.
+- **The full-text reference is retriever-limited, not absolute.** Never describe
+  it in docs, code comments, or output as "what perfect navigation would
+  achieve." Concise surface text can outperform a long full document for a
+  retriever. Report the signed map gap rather than clamping that result away.
+- **Surface extraction is versioned.** A routing score is only about the
+  pointer extractor that produced it. The current `pointer-block@1` retains a
+  pointer's heading and path-bearing line, not arbitrary surrounding prose.
+  Baselines cannot cross extractor versions.
 - **Probes never come from the index.** Generating questions from the
   navigation surface and testing that surface against them is circular. Probes
   come from document bodies with the index withheld, or from supplied query
@@ -251,22 +254,23 @@ Generated from `examples/source/` by `examples/build.py`.
 not complete until reviewed probes and held-out improvements are demonstrated
 across three real corpora. Phase 4 and all Phase 5 distribution remain unstarted.
 
-**Current development checkpoint, 2026-08-28:** implementation review is
-complete and the repository is at the Phase 3 evidence gate. The next work is
-to prepare body-only development and held-out probe sets for three real
-corpora, have at least 20 questions accepted by a blind human reviewer, use
+**Current development checkpoint, 2026-08-28:** `pointer-block@1` is now the
+frozen extractor for Phase 3. The repository is at the evidence gate: blind
+review the 36 body-only candidate probes, retain at least 20 across all three
+corpora, classify each accepted question as a coverage or vocabulary case, use
 only development misses to revise each navigation surface, and measure the
 locked held-out change. Do not begin Phase 4 from the current tree. npm
 distribution is separately blocked by the clean-consumer audit described in
 Phase 3.
 
 **Review material prepared, not yet accepted:**
-`validation/phase3/` pins candidate generated development and held-out probes
-for OpenAI Codex, NVIDIA NVCF, and Vercel AI SDK. Each source checkout and
-navigation surface is recorded there. The review log is deliberately blank:
-these questions cannot count as evidence until an independent human reviewer
-accepts or rejects them without seeing the evaluated surface. No surface
-rewrite or held-out comparison has been performed yet.
+`validation/phase3/` pins 36 candidate generated development and held-out
+probes for OpenAI Codex, NVIDIA NVCF, and Vercel AI SDK. Each source checkout,
+navigation surface, and `pointer-block@1` constraint is recorded there. The
+review log is deliberately blank: these questions cannot count as evidence
+until an independent human reviewer accepts or rejects them without seeing the
+evaluated surface. No surface rewrite or held-out comparison has been performed
+yet.
 
 ## 6. Build order
 
@@ -330,7 +334,8 @@ this phase is trusted for Phase 5 distribution.
       from a question and scores the same question is training-set evaluation,
       not evidence.
 - [x] Compare held-out runs directly and reject comparisons whose probes,
-      document fingerprint, surface, retrievers, floor, or ceiling changed.
+      document fingerprint, surface, extractor, retrievers, floor, or full-text
+      reference changed.
 
 **Evidence required before this phase counts as done:**
 

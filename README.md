@@ -36,12 +36,12 @@ $ nocontext examples/retrieval-index --evaluate
   lexical  bm25@1.0.0
   top-1 routing miss    47%  (1 - P@1)
   observed (index)      53% P@1
-  ceiling (full text)   74% P@1
+  full-text reference   74% P@1
 
   semantic  minilm-l6-v2@1.0.0+751bff3
   top-1 routing miss     5%  (1 - P@1)
   observed (index)      95% P@1
-  ceiling (full text)   95% P@1
+  full-text reference   95% P@1
 ```
 
 This is a shortened excerpt of the real output. The command also prints the
@@ -136,11 +136,12 @@ Every run reports three conditions, never one number alone:
 |---|---|
 | **Floor** | a random ranking would score this. Shrinks as corpus size grows. |
 | **Observed** | routing using only the index (or file tree, if there is none) |
-| **Ceiling** | routing with full document bodies available, same retriever |
+| **Full-text reference** | routing with full document bodies available, same retriever |
 
 A bare percentage is unreadable without the corpus size behind it: 60% P@1 on
-3 documents is barely above chance, on 200 it's remarkable. The gap between
-observed and ceiling is the part an index rewrite can actually fix.
+3 documents is barely above chance, on 200 it's remarkable. The signed
+difference between observed and the full-text reference is a routing measure,
+not an agent-grounding score.
 
 ## Can I game it?
 

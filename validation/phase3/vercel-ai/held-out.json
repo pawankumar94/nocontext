@@ -16,6 +16,14 @@
     {
       "question": "Which release mechanism is used to record package changes before the regular release process?",
       "expect": "contributing/releases.md"
+    },
+    {
+      "question": "Why must trustedOrigin come from developer configuration rather than a provider response?",
+      "expect": "contributing/secure-url-handling.md"
+    },
+    {
+      "question": "What format must the test loader reconstruct for OpenAI-style saved stream chunks?",
+      "expect": "contributing/testing.md"
     }
   ]
 }

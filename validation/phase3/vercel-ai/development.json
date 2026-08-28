@@ -12,6 +12,18 @@
     {
       "question": "What test coverage should a contributor run manually for a new text-generation feature?",
       "expect": "contributing/testing.md"
+    },
+    {
+      "question": "When a provider URL is built only from a configured base endpoint, which validation decision is appropriate?",
+      "expect": "contributing/secure-url-handling.md"
+    },
+    {
+      "question": "Where should provider-response fixtures live in a package?",
+      "expect": "contributing/testing.md"
+    },
+    {
+      "question": "How should an embedding response fixture be reduced when its vectors are too large to store in full?",
+      "expect": "contributing/testing.md"
     }
   ]
 }

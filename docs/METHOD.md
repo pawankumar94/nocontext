@@ -80,28 +80,47 @@ Every run reports:
 |---|---|
 | **Floor** | random selection, `1/N`. What the score would be with no information at all. |
 | **Observed** | index-only routing. |
-| **Ceiling** | routing with full document bodies available, under the same retriever. |
+| **Full-text reference** | routing with full document bodies available, under the same retriever. |
 
-The product is the **gap between observed and ceiling**. That is the portion of
-your corpus's own information that your navigation surface is failing to expose.
+The product is the signed difference between observed routing and the full-text
+reference. A positive map gap means the surface hides information the retriever
+can use from full documents. A negative gap means concise pointer text routed
+better than a long document for that retriever. Neither result is an agent
+grounding score.
 
 This matters because it self-normalises. A 60% score on a 3-document corpus is
 bad (floor is 33%). A 60% score on a 200-document corpus is remarkable (floor is
 0.5%). Reporting 60% alone tells you nothing, and any tool that does is selling
 you a number rather than a finding.
 
-Where the ceiling is itself low, the problem is not navigation. The corpus does
-not contain the answer, and this tool will say so rather than blaming the index.
+Where the full-text reference is itself low, the problem may be the retriever,
+the question, or the documents rather than navigation. This tool reports that
+limitation instead of blaming the map.
 
-**The ceiling is retriever-limited, not absolute.** It is what this retriever
-manages with the whole document in front of it, which is not the same as what a
-reasoning model would manage. On the bundled example corpus BM25 reaches 74%
-with full text, so a quarter of the probes are not answerable by lexical
-matching at all, whatever the index says. An earlier draft of this document
-called the ceiling "what perfect navigation would achieve". That was wrong and
-this is the correction: it is an upper bound under one scorer, and the honest
-reading of the gap is "how much of what this retriever could find is hidden by
-the index", not "how much of the truth is unreachable".
+**The full-text reference is retriever-limited and not an upper bound.** It is
+what this retriever manages with the whole document in front of it, which is
+not the same as what a reasoning model would manage. Long documents can embed
+worse than a concise, well-written pointer, so the surface can score above the
+reference. On the bundled example corpus BM25 reaches 74% with full text, so a
+quarter of the probes are not answerable by lexical matching at all, whatever
+the map says. The internal field remains `ceiling` for compatibility with the
+floor/observed/reference triplet; output calls it a full-text reference to avoid
+claiming perfect navigation.
+
+## Surface extraction
+
+The navigation file is not scored as one blob. Every run records a versioned
+extractor. The current explicit-surface extractor is `pointer-block@1`: for
+each Markdown document path it keeps the path-bearing list item or table row
+and its nearest preceding Markdown heading. It excludes fenced code, generic
+policy prose without a document path, and neighboring pointers. An implicit
+file-tree surface uses `file-tree@1`.
+
+This is deliberately conservative. It does not yet model arbitrary paragraphs
+around a link, nested application-specific navigation, or prose references
+without a Markdown path. Those are extractor limitations, not documentation
+failures. A new extractor must receive a new version and cannot be compared to
+an earlier baseline.
 
 ## Where probe questions come from
 

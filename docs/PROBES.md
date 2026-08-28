@@ -53,7 +53,7 @@ unchanged and revised surfaces.
 Scope large repositories to the documentation the surface is expected to
 navigate. Repeat `--include` for each document file or directory. This keeps
 package changelogs, generated notes, and unrelated subtree instructions out of
-the floor and ceiling.
+the floor and full-text reference.
 
 ```bash
 nocontext . --surface AGENTS.md --include docs --include CONTRIBUTING.md \
@@ -74,6 +74,6 @@ not automatic rewrites. Evaluate mode never emits those candidates, and
 `--fail-under` is rejected in diagnose mode.
 
 The baseline comparison refuses runs with different probes, document
-fingerprints, surface identities, retriever versions, floors, or ceilings. Record both raw
-evaluation runs when publishing results. An improvement on development
+fingerprints, surface identities, extractor and retriever versions, floors, or
+full-text references. Record both raw evaluation runs when publishing results. An improvement on development
 questions alone is training-set fit, not evidence that navigation improved.

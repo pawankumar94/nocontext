@@ -12,6 +12,18 @@
     {
       "question": "Where should a function keep API keys instead of placing them in environment variables?",
       "expect": "docs/user/function-creation.md"
+    },
+    {
+      "question": "Can an existing function version be updated to point at a new container image?",
+      "expect": "docs/user/function-creation.md"
+    },
+    {
+      "question": "What container-user requirement applies when packaging a Cloud Function?",
+      "expect": "docs/user/function-creation.md"
+    },
+    {
+      "question": "Which creation mechanism supports orchestration across several containers?",
+      "expect": "docs/user/function-creation.md"
     }
   ]
 }

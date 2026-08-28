@@ -16,6 +16,14 @@
     {
       "question": "Which operation guide covers restarting an NVCF service and checking that the rollout completed?",
       "expect": "docs/user/control-plane-operations.md"
+    },
+    {
+      "question": "Does registry allowlisting make image existence checks happen during function creation?",
+      "expect": "docs/user/registry-allowlist.md"
+    },
+    {
+      "question": "Can a custom registry allowlist be used for Helm-chart function images?",
+      "expect": "docs/user/registry-allowlist.md"
     }
   ]
 }

@@ -1,7 +1,9 @@
 # Phase 3 review packet
 
-This packet is the remaining evidence work for Phase 3. It is deliberately not
-a benchmark result and does not make Phase 3 pass by itself.
+This packet is the remaining evidence work for Phase 3. It contains 36
+candidate probes: six development and six held-out questions for each corpus.
+It is deliberately not a benchmark result and does not make Phase 3 pass by
+itself.
 
 ## Fixed corpora
 
@@ -27,6 +29,12 @@ in every document named by `expect`, and is not merely a heading lookup,
 trivia, or an ambiguous request. Reject otherwise. At least 20 accepted
 questions across the three corpora are required before this packet becomes
 Phase 3 evidence.
+
+Before scoring, classify every accepted probe as either a **coverage** probe,
+where the selected surface should link the gold document but does not, or a
+**vocabulary** probe, where the pointer exists but does not route the question.
+Do not combine those conditions into one unsupported claim. The current runs
+use `pointer-block@1`; do not compare them to older `link-line@1` output.
 
 Keep `development.json` and `held-out.json` separate. Use only development
 questions with `--diagnose`. Do not inspect held-out misses until the navigation

@@ -12,7 +12,7 @@ src/
 │   ├── corpus/        documents and navigation surface
 │   ├── probes/        question validation
 │   ├── retrievers/    one file per implementation, one contract
-│   └── scoring/       floor, observed, ceiling
+│   └── scoring/       floor, observed, full-text reference
 ├── retrievers/    I/O-backed implementations such as the local model loader
 ├── sources/       where documents come from. filesystem is one of several
 ├── report/        formatting. text, json

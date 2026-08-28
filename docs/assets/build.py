@@ -87,7 +87,7 @@ font-weight="600">43%</text>
     <text x="300" y="62" fill="{MUTE}" font-size="18" text-anchor="end">8%</text>
     <text x="0" y="96" fill="{MUTE}" font-size="18">observed</text>
     <text x="300" y="96" fill="{PAPER}" font-size="18" text-anchor="end">57%</text>
-    <text x="0" y="130" fill="{MUTE}" font-size="18">ceiling</text>
+    <text x="0" y="130" fill="{MUTE}" font-size="18">full-text reference</text>
     <text x="300" y="130" fill="{PAPER}" font-size="18" text-anchor="end">92%</text>
   </g>
 </svg>
