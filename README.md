@@ -27,7 +27,9 @@ those words don't overlap, the agent doesn't error. It just doesn't find your
 doc, and answers from its own priors instead. Nothing logs that this happened.
 The session looks completely normal.
 
-`nocontext` finds those mismatches before your agent does.
+`nocontext` makes those routing mismatches measurable before you revise the
+navigation surface. Whether that changes an agent's grounding or exploration
+cost is the Phase 4 question this project has not answered yet.
 
 ```text
 $ nocontext examples/retrieval-index --evaluate
@@ -63,8 +65,9 @@ identifies vocabulary gaps that can be checked on held-out questions.
 
 And unlike an OKF bundle, an MCP server, or a new knowledge format, `nocontext`
 asks nothing of you. It reads the file your agent *already* reads —
-`AGENTS.md`, `CLAUDE.md`, `README.md`, `docs/` — and tells you where the
-wording is going to lose it. No new format to adopt, no infrastructure to run.
+`AGENTS.md`, `CLAUDE.md`, `README.md`, `docs/` — and identifies where its
+wording may fail to route a question to the answering document. No new format
+to adopt, no infrastructure to run.
 
 ## Install
 

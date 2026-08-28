@@ -222,7 +222,7 @@ Generated from `examples/source/` by `examples/build.py`.
   does not distort the floor, ceiling, or retrieval candidates
 - Text and JSON reporting, working CLI (`node dist/surfaces/cli.js <dir>`)
 - Four example corpora + 19 hand-written probes, generated from one source
-- 34 tests passing, including the Phase 1 gate and Phase 3 safety boundaries
+- 38 tests passing, including the Phase 1 gate and Phase 3 safety boundaries
 - A packed-tarball smoke test installs in a clean temporary project and runs
   both retrievers. That test also exposed a distribution blocker recorded
   below; local `npm audit` alone was not sufficient release evidence.
