@@ -1,24 +1,58 @@
 /**
- * Floor, observed and ceiling for one retriever.
+ * Floor, observed and ceiling for one retriever, in standard IR metrics.
  *
- * Three numbers, never one. See METHOD.md.
+ * MRR and Recall@k are reported because ContextBench and Agent Retrieval Bench
+ * report them. Inventing a scale would make this incomparable to the published
+ * work it sits beside.
  */
-import type { Doc, Measurement, NavigationSurface, Probe, Retriever } from "../types.js";
+import type {
+  Doc, Floor, Measurement, NavigationSurface, Probe, RankMetrics, Retriever,
+} from "../types.js";
 
-async function routeAll(
+type Outcome = Measurement["outcomes"][number];
+
+async function route(
   retriever: Retriever,
   probes: Probe[],
   candidates: { docId: string; text: string }[],
-): Promise<{ probe: Probe; picked: string | null; hit: boolean }[]> {
+): Promise<Outcome[]> {
   return Promise.all(probes.map(async (probe) => {
     const ranked = await retriever.rank(probe.question, candidates);
-    const picked = ranked[0] ?? null;
-    return { probe, picked, hit: picked === probe.expect };
+    const at = ranked.indexOf(probe.expect);
+    return {
+      probe,
+      picked: ranked[0] ?? null,
+      rank: at === -1 ? null : at + 1,
+      hit: ranked[0] === probe.expect,
+    };
   }));
 }
 
-const rate = (outcomes: { hit: boolean }[]) =>
-  outcomes.length ? outcomes.filter((o) => o.hit).length / outcomes.length : 0;
+function metrics(outcomes: Outcome[]): RankMetrics {
+  const n = outcomes.length || 1;
+  const within = (k: number) =>
+    outcomes.filter((o) => o.rank !== null && o.rank <= k).length / n;
+  return {
+    p1: outcomes.filter((o) => o.hit).length / n,
+    mrr: outcomes.reduce((s, o) => s + (o.rank ? 1 / o.rank : 0), 0) / n,
+    recall: { at1: within(1), at3: within(3), at5: within(5) },
+  };
+}
+
+/**
+ * Expected metrics from ranking N documents at random.
+ *
+ * Recall@k is k/N. MRR is the mean reciprocal rank over a uniform permutation,
+ * which is the Nth harmonic number over N. Both shrink as a corpus grows, which
+ * is exactly why a raw score means nothing without them.
+ */
+export function randomFloor(n: number): Floor {
+  if (n <= 0) return { p1: 0, mrr: 0, recall: { at1: 0, at3: 0, at5: 0 } };
+  let harmonic = 0;
+  for (let i = 1; i <= n; i++) harmonic += 1 / i;
+  const at = (k: number) => Math.min(1, k / n);
+  return { p1: 1 / n, mrr: harmonic / n, recall: { at1: at(1), at3: at(3), at5: at(5) } };
+}
 
 export async function measure(
   retriever: Retriever,
@@ -26,23 +60,16 @@ export async function measure(
   surface: NavigationSurface,
   probes: Probe[],
 ): Promise<Measurement> {
-  // Observed: only what the agent sees before opening anything.
-  const observed = await routeAll(retriever, probes, surface.entries);
-
-  // Ceiling: the same routing with full bodies available. This is what the
-  // corpus makes possible, so the distance from observed is the part the
-  // index is responsible for.
-  const ceiling = await routeAll(
-    retriever,
-    probes,
+  const observed = await route(retriever, probes, surface.entries);
+  const ceiling = await route(
+    retriever, probes,
     docs.map((d) => ({ docId: d.id, text: `${d.title}\n${d.body}` })),
   );
-
   return {
     retriever: `${retriever.name}@${retriever.version}`,
-    floor: docs.length ? 1 / docs.length : 0,
-    observed: rate(observed),
-    ceiling: rate(ceiling),
+    floor: randomFloor(docs.length),
+    observed: metrics(observed),
+    ceiling: metrics(ceiling),
     outcomes: observed,
   };
 }

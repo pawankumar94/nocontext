@@ -56,7 +56,7 @@ async function main(): Promise<number> {
     : renderText(run, !argv.includes("--no-color")));
 
   const failUnder = flag("--fail-under");
-  if (failUnder && run.lexical.observed < Number(failUnder) / 100) return 1;
+  if (failUnder && run.lexical.observed.p1 < Number(failUnder) / 100) return 1;
   void ungroundedRate;
   return 0;
 }

@@ -12,11 +12,12 @@ export function renderText(run: Run, color = true): string {
   const m = run.lexical;
   const out: string[] = [""];
 
-  out.push(`  ${amber(pad("ungrounded rate", 22))}${pct(ungroundedRate(m))}`);
+  out.push(`  ${amber(pad("ungrounded rate", 22))}${pct(ungroundedRate(m))}${dim("  (1 - P@1)")}`);
   out.push("");
-  out.push(`  ${dim(pad("floor (random)", 22))}${pad(pct(m.floor), 6)}${dim(`${run.corpus.docs} documents`)}`);
-  out.push(`  ${dim(pad("observed (index)", 22))}${pad(pct(m.observed), 6)}${dim(run.surface === "implicit" ? "file tree, no index" : "")}`);
-  out.push(`  ${dim(pad("ceiling (full text)", 22))}${pad(pct(m.ceiling), 6)}`);
+  out.push(`  ${dim(pad("", 22))}${pad("P@1", 8)}${pad("MRR", 8)}${pad("R@3", 8)}R@5`);
+  out.push(`  ${dim(pad("floor (random)", 22))}${pad(pct(m.floor.p1), 8)}${pad(m.floor.mrr.toFixed(2), 8)}${pad(pct(m.floor.recall.at3), 8)}${pct(m.floor.recall.at5)}`);
+  out.push(`  ${dim(pad("observed (index)", 22))}${pad(pct(m.observed.p1), 8)}${pad(m.observed.mrr.toFixed(2), 8)}${pad(pct(m.observed.recall.at3), 8)}${pct(m.observed.recall.at5)}${dim(run.surface === "implicit" ? "  file tree, no index" : "")}`);
+  out.push(`  ${dim(pad("ceiling (full text)", 22))}${pad(pct(m.ceiling.p1), 8)}${pad(m.ceiling.mrr.toFixed(2), 8)}${pad(pct(m.ceiling.recall.at3), 8)}${pct(m.ceiling.recall.at5)}`);
   out.push("");
 
   const gap = reachableGap(m);

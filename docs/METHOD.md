@@ -7,6 +7,39 @@ from you than from a thread.
 Everything below is implemented in `src/` and reproducible on any corpus,
 including your own.
 
+## Where this sits relative to existing benchmarks
+
+Two recent benchmarks measure retrieval in coding agents and are worth reading
+before this one: [ContextBench](https://arxiv.org/abs/2602.05892) (1,136
+issue-resolution tasks, 66 repositories, human-annotated gold contexts) and
+[Agent Retrieval Bench](https://arxiv.org/html/2607.24882v1) (427 samples
+across four task types). Both hold the **repository fixed and vary the
+retriever or agent**. Their headline findings: "sophisticated agent scaffolding
+yields only marginal gains in context retrieval" (ContextBench), and
+interactive agents still miss gold context on 27 to 35 percent of samples even
+with exploration (ARB). Best reported sample-weighted MRR in ARB is 0.24.
+
+This tool does the opposite: it **holds the retriever fixed and varies the
+navigation surface**. Neither benchmark claims to measure whether documentation
+structure affects retrieval; ARB says so explicitly. That is the axis this
+tool measures, and the two are complementary rather than competing.
+
+We report the same metrics those benchmarks use, MRR and Recall@k, rather than
+an invented scale, so a result here means something to someone who has read
+either paper.
+
+**A related null result, addressed directly rather than ignored.** A
+preregistered ablation studied [progressive disclosure in LLM-maintained wikis]
+(https://arxiv.org/pdf/2607.04576) and found minimal to no measurable impact
+from nested versus flat structure. If this tool's claim were "hierarchy helps",
+that null result would be a serious problem for it. It is not the claim. The
+finding here is about **vocabulary**, not structure: an index that describes a
+concept in the words a person would summarise it routes worse than one that
+describes it in the words a person would search for, independent of whether
+either is nested. The two are different variables and a corpus can hold one
+constant while varying the other. We have not tested whether they interact,
+and that is an open question rather than a settled one.
+
 ## The question
 
 An agent is pointed at a directory of documentation. A user asks a question the
@@ -25,12 +58,17 @@ failure this measures.
 
 ## What gets measured
 
-For a corpus of N documents and a set of probe questions, we report the fraction
-of probes that route to the correct document using only what the agent sees
-before it opens anything: the index, or in its absence, the file tree.
+For a corpus of N documents and a set of probe questions, we report P@1
+(precision at rank 1), MRR (mean reciprocal rank), and Recall@{1,3,5}, using
+only what the agent sees before it opens anything: the index, or in its
+absence, the file tree.
 
-We call the inverse the **ungrounded rate**: the share of answerable questions
-where the agent would have to answer without reaching its source.
+Recall@k matters because agents typically open more than one candidate.
+Scoring only the top hit understates what an index enables and understates
+what one fails to.
+
+We call the inverse of P@1 the **ungrounded rate**: the share of answerable
+questions where the agent's single best guess would not reach its source.
 
 ## Three numbers, never one
 

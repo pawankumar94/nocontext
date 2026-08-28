@@ -28,16 +28,16 @@ function warningsFor(
         "which is not comparable to a corpus that has a real index.",
     });
   }
-  if (lex.ceiling < 0.5) {
+  if (lex.ceiling.p1 < 0.5) {
     out.push({
       kind: "low-ceiling",
-      ceiling: lex.ceiling,
+      ceiling: lex.ceiling.p1,
       note: "Full-text routing is weak, so the answers may not be in the corpus. " +
         "This is not an index problem and rewriting the index will not fix it.",
     });
   }
   if (sem) {
-    const lead = lex.observed - sem.observed;
+    const lead = lex.observed.p1 - sem.observed.p1;
     if (lead > STUFFING_LEAD) {
       out.push({
         kind: "keyword-stuffing",

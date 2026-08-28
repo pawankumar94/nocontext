@@ -31,7 +31,7 @@ const runs = new Map<string, Run>();
 for (const v of VARIANTS) runs.set(v, await run(v));
 
 test("all variants report the same ceiling", () => {
-  const ceilings = VARIANTS.map((v) => runs.get(v)!.lexical.ceiling);
+  const ceilings = VARIANTS.map((v) => runs.get(v)!.lexical.ceiling.p1);
   assert.equal(new Set(ceilings).size, 1,
     `ceilings diverged: ${VARIANTS.map((v, i) => `${v}=${ceilings[i]}`).join(" ")}. ` +
     "The documents are byte-identical, so this is a bug in the implementation.");
@@ -45,7 +45,7 @@ test("all variants see the same corpus", () => {
 
 test("an index written for retrieval beats one written for a person", () => {
   assert.ok(
-    runs.get("retrieval-index")!.lexical.observed > runs.get("human-index")!.lexical.observed,
+    runs.get("retrieval-index")!.lexical.observed.p1 > runs.get("human-index")!.lexical.observed.p1,
     "rewriting the index around the words people ask in did not help, " +
     "which is the claim this project exists to make",
   );
@@ -55,14 +55,14 @@ test("no index scores worst", () => {
   const implicit = runs.get("no-index")!;
   assert.equal(implicit.surface, "implicit");
   for (const v of ["human-index", "retrieval-index", "stuffed-index"] as const) {
-    assert.ok(implicit.lexical.observed <= runs.get(v)!.lexical.observed,
+    assert.ok(implicit.lexical.observed.p1 <= runs.get(v)!.lexical.observed.p1,
       `no-index outscored ${v}, which should not be possible`);
   }
 });
 
 test("a stuffed index beats an honest one lexically, and nothing yet catches it", () => {
   const stuffed = runs.get("stuffed-index")!;
-  assert.ok(stuffed.lexical.observed > runs.get("retrieval-index")!.lexical.observed,
+  assert.ok(stuffed.lexical.observed.p1 > runs.get("retrieval-index")!.lexical.observed.p1,
     "the stuffed corpus is meant to game BM25; if it stopped, it stopped being an adversary");
   // Documents the current hole rather than asserting it is fine. The semantic
   // retriever in phase 3 is what closes it, and this flips to an assertion then.

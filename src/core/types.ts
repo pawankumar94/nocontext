@@ -54,22 +54,54 @@ export interface Retriever {
 }
 
 /**
+ * Standard information-retrieval metrics.
+ *
+ * These are the field's measures, not ours. ContextBench and Agent Retrieval
+ * Bench both report MRR and Recall@k, so a result here is comparable to
+ * published work rather than to a scale we invented.
+ *
+ * Recall@k matters because agents open more than one document. Scoring only
+ * the top hit measures something narrower than what an agent actually does.
+ */
+export interface RankMetrics {
+  /** Precision@1. The headline, and the strictest of these. */
+  p1: number;
+  /** Mean reciprocal rank over all probes. */
+  mrr: number;
+  /** Fraction of probes whose answer appears in the top k. */
+  recall: { at1: number; at3: number; at5: number };
+}
+
+/** Expected metrics from ranking documents at random. The scores to beat. */
+export interface Floor {
+  p1: number;
+  mrr: number;
+  recall: { at1: number; at3: number; at5: number };
+}
+
+/**
  * A routing measurement under one retriever.
  *
  * There is no field for a single headline number, and that is intentional.
  * A percentage without its floor is unreadable: 60% across 3 documents is
- * worse than chance-adjacent, 60% across 200 is extraordinary.
+ * chance-adjacent, 60% across 200 is extraordinary.
  */
 export interface Measurement {
   retriever: string;
-  /** Random selection, 1/N. The score to beat. */
-  floor: number;
+  /** Random ranking. Not a constant: it depends on corpus size. */
+  floor: Floor;
   /** Routing using only the navigation surface. */
-  observed: number;
-  /** Routing with full bodies available. What perfect navigation would reach. */
-  ceiling: number;
-  /** Per-probe outcomes, so any disputed score can be resolved by diffing. */
-  outcomes: { probe: Probe; picked: string | null; hit: boolean }[];
+  observed: RankMetrics;
+  /** Routing with full bodies available, under the same retriever. */
+  ceiling: RankMetrics;
+  /** Per-probe outcomes, so any disputed score is resolvable by diffing. */
+  outcomes: {
+    probe: Probe;
+    picked: string | null;
+    /** 1-based position of the expected document, null if never retrieved. */
+    rank: number | null;
+    hit: boolean;
+  }[];
 }
 
 /**
@@ -98,15 +130,16 @@ export type Warning =
 
 /** Ungrounded rate is derived, never stored, so it can never drift from its inputs. */
 export function ungroundedRate(m: Measurement): number {
-  return 1 - m.observed;
+  return 1 - m.observed.p1;
 }
 
 /**
- * The finding: how much of the corpus's own information the navigation surface
- * fails to expose. This, not the raw observed score, is what the tool is for.
+ * The finding: how much of what this retriever could find is hidden by the
+ * navigation surface. Not "how much of the truth is unreachable" — the ceiling
+ * is retriever-limited. See METHOD.md.
  */
 export function reachableGap(m: Measurement): number {
-  return Math.max(0, m.ceiling - m.observed);
+  return Math.max(0, m.ceiling.p1 - m.observed.p1);
 }
 
 /**
