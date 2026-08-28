@@ -38,7 +38,54 @@ test("a surface in a subdirectory resolves sibling document paths", async () => 
   const docs = await loadDocs(source);
   const surface = await buildSurface(source, docs);
   assert.equal(surface.kind, "explicit");
+  assert.equal(surface.extractor, "pointer-block@1");
   assert.match(surface.entries[0]!.text, /deploy\.md/);
+});
+
+test("pointer blocks retain their heading without borrowing adjacent pointers", async () => {
+  const files = new Map([
+    ["AGENTS.md", [
+      "## Deploying safely",
+      "- [Release runbook](docs/deploy.md): staged rollout and rollback.",
+      "## Authentication",
+      "- [Auth runbook](docs/auth.md): token and login failures.",
+    ].join("\n")],
+    ["docs/deploy.md", "# Deploy\nRelease procedure."],
+    ["docs/auth.md", "# Auth\nAuthentication procedure."],
+  ]);
+  const source: CorpusSource = {
+    name: "test",
+    async list() { return ["docs/deploy.md", "docs/auth.md"]; },
+    async read(id) { return files.get(id)!; },
+    async indexPath() { return "AGENTS.md"; },
+  };
+  const surface = await buildSurface(source, await loadDocs(source));
+  const deploy = surface.entries.find((entry) => entry.docId === "docs/deploy.md")!.text;
+  const auth = surface.entries.find((entry) => entry.docId === "docs/auth.md")!.text;
+  assert.match(deploy, /Deploying safely/);
+  assert.doesNotMatch(deploy, /Authentication/);
+  assert.match(auth, /Authentication/);
+  assert.doesNotMatch(auth, /Deploying safely/);
+});
+
+test("pointer blocks exclude policy prose without a document pointer", async () => {
+  const files = new Map([
+    ["AGENTS.md", [
+      "## Security policy",
+      "Never put credentials in local files.",
+      "- [Authentication guide](docs/auth.md): login and token configuration.",
+    ].join("\n")],
+    ["docs/auth.md", "# Auth\nAuthentication procedure."],
+  ]);
+  const source: CorpusSource = {
+    name: "test",
+    async list() { return ["docs/auth.md"]; },
+    async read(id) { return files.get(id)!; },
+    async indexPath() { return "AGENTS.md"; },
+  };
+  const surface = await buildSurface(source, await loadDocs(source));
+  assert.match(surface.entries[0]!.text, /Security policy/);
+  assert.doesNotMatch(surface.entries[0]!.text, /Never put credentials/);
 });
 
 test("a nested README reference does not become a root README entry", async () => {

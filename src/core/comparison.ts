@@ -41,6 +41,9 @@ export function compareRuns(before: Run, after: Run): RunComparison {
   if (before.surface !== after.surface || before.surfaceSource !== after.surfaceSource) {
     errors.push("navigation surface identity differs");
   }
+  if (before.surfaceExtractor !== after.surfaceExtractor) {
+    errors.push("surface extractor versions differ");
+  }
   const beforeProbes = before.lexical.outcomes.map((outcome) => outcome.probe);
   const afterProbes = after.lexical.outcomes.map((outcome) => outcome.probe);
   if (!same(beforeProbes, afterProbes)) errors.push("probe sets or ordering differ");

@@ -118,7 +118,7 @@ function warningsFor(
       described,
       total: surface.entries.length,
       note: `The navigation surface describes ${described} of ${surface.entries.length} documents. ` +
-        "Unlinked documents count as unreachable; use --include if this surface is not responsible for all of them.",
+        "Unlinked documents have no explicit map pointer; use --include if this surface is not responsible for all of them.",
     });
   }
   for (const measurement of [lex, sem].filter((value): value is Measurement => Boolean(value))) {
@@ -191,6 +191,7 @@ export async function analyze(
     mode,
     surface: surface.kind,
     surfaceSource: surface.source,
+    surfaceExtractor: surface.extractor,
     surfaceCoverage: {
       described: surface.entries.filter((entry) => entry.text.trim()).length,
       total: surface.entries.length,

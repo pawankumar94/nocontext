@@ -26,6 +26,8 @@ export interface NavigationSurface {
   kind: "explicit" | "implicit";
   /** Source path for an explicit index, undefined for implicit. */
   source?: string;
+  /** Versioned rule used to turn the source file into document pointers. */
+  extractor: string;
   /** One entry per document, in the words the surface uses for it. */
   entries: { docId: string; text: string }[];
 }
@@ -101,7 +103,7 @@ export interface Measurement {
   floor: Floor;
   /** Routing using only the navigation surface. */
   observed: RankMetrics;
-  /** Routing with full bodies available, under the same retriever. */
+  /** Routing with full bodies available, under the same retriever. A reference condition, not a strict upper bound. */
   ceiling: RankMetrics;
   /** Per-probe outcomes, so any disputed score is resolvable by diffing. */
   outcomes: {
@@ -126,6 +128,8 @@ export interface Run {
   surface: NavigationSurface["kind"];
   /** Exact navigation file scored. Absent means the file tree was scored. */
   surfaceSource?: string;
+  /** Versioned surface extractor. Baselines cannot cross extractor versions. */
+  surfaceExtractor: string;
   surfaceCoverage: { described: number; total: number };
   probes: { supplied: number; generated: number; fixture: number };
   lexical: Measurement;
@@ -162,12 +166,12 @@ export function routingMissRate(m: Measurement): number {
 }
 
 /**
- * The finding: how much of what this retriever could find is hidden by the
- * navigation surface. Not "how much of the truth is unreachable" — the ceiling
- * is retriever-limited. See METHOD.md.
+ * Signed difference between index-only and full-text reference routing. A
+ * positive number is a map gap. A negative number means concise pointer text
+ * routed better than the full document under this retriever.
  */
-export function reachableGap(m: Measurement): number {
-  return Math.max(0, m.ceiling.p1 - m.observed.p1);
+export function mapGap(m: Measurement): number {
+  return m.ceiling.p1 - m.observed.p1;
 }
 
 /**

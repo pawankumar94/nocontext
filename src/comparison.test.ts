@@ -66,3 +66,14 @@ test("paired evaluation comparison rejects changed document content", async () =
   assert.equal(comparison.compatible, false);
   assert.ok(comparison.errors.includes("document contents differ"));
 });
+
+test("paired evaluation comparison rejects a changed surface extractor", async () => {
+  const before = await analyze(source("[Deploy](docs/deploy.md) Database migrations"), {
+    probes,
+    retrievers: [lexical],
+  });
+  const after = { ...before, surfaceExtractor: "link-line@1" };
+  const comparison = compareRuns(before, after);
+  assert.equal(comparison.compatible, false);
+  assert.ok(comparison.errors.includes("surface extractor versions differ"));
+});

@@ -1,5 +1,5 @@
 /** Terminal output. Formatting only, no measurement. */
-import { reachableGap, routingMissRate, type Measurement, type Run } from "../core/types.js";
+import { mapGap, routingMissRate, type Measurement, type Run } from "../core/types.js";
 import type { RunComparison } from "../core/comparison.js";
 
 const pct = (n: number) => `${(n * 100).toFixed(0)}%`;
@@ -15,6 +15,7 @@ export function renderText(run: Run, color = true, comparison?: RunComparison): 
     "",
     `  ${run.mode} run · surface: ${surface}`,
     `  corpus: ${run.corpus.docs} documents · described by surface: ${run.surfaceCoverage.described}`,
+    `  extractor: ${run.surfaceExtractor}`,
   ];
 
   const addMeasurement = (label: string, m: Measurement) => {
@@ -24,7 +25,7 @@ export function renderText(run: Run, color = true, comparison?: RunComparison): 
     out.push(`  ${dim(pad("", 22))}${pad("P@1", 8)}${pad("MRR", 8)}${pad("R@3", 8)}R@5`);
     out.push(`  ${dim(pad("floor (random)", 22))}${pad(pct(m.floor.p1), 8)}${pad(m.floor.mrr.toFixed(2), 8)}${pad(pct(m.floor.recall.at3), 8)}${pct(m.floor.recall.at5)}`);
     out.push(`  ${dim(pad("observed (index)", 22))}${pad(pct(m.observed.p1), 8)}${pad(m.observed.mrr.toFixed(2), 8)}${pad(pct(m.observed.recall.at3), 8)}${pct(m.observed.recall.at5)}${dim(run.surface === "implicit" ? "  file tree, no index" : "")}`);
-    out.push(`  ${dim(pad("ceiling (full text)", 22))}${pad(pct(m.ceiling.p1), 8)}${pad(m.ceiling.mrr.toFixed(2), 8)}${pad(pct(m.ceiling.recall.at3), 8)}${pct(m.ceiling.recall.at5)}`);
+    out.push(`  ${dim(pad("full-text reference", 22))}${pad(pct(m.ceiling.p1), 8)}${pad(m.ceiling.mrr.toFixed(2), 8)}${pad(pct(m.ceiling.recall.at3), 8)}${pct(m.ceiling.recall.at5)}`);
     out.push("");
   };
 
@@ -32,10 +33,12 @@ export function renderText(run: Run, color = true, comparison?: RunComparison): 
   if (run.semantic) addMeasurement("semantic", run.semantic);
 
   const addGap = (label: string, measurement: Measurement) => {
-    const gap = reachableGap(measurement);
+    const gap = mapGap(measurement);
     out.push(gap > 0.01
-      ? `  ${label} reachable gap: ${Math.round(gap * 100)} points.`
-      : `  ${label} reachable gap: 0 points.`);
+      ? `  ${label} map gap: ${Math.round(gap * 100)} points.`
+      : gap < -0.01
+        ? `  ${label} map outperforms the full-text reference by ${Math.round(-gap * 100)} points.`
+        : `  ${label} map gap: 0 points.`);
   };
   addGap("lexical", run.lexical);
   if (run.semantic) addGap("semantic", run.semantic);
@@ -43,7 +46,7 @@ export function renderText(run: Run, color = true, comparison?: RunComparison): 
   const missed = run.lexical.outcomes.filter((o) => !o.hit);
   if (missed.length) {
     out.push("");
-    out.push(`  ${dim("unreachable")}`);
+    out.push(`  ${dim("lexical top-1 index misses")}`);
     for (const o of missed.slice(0, 8)) {
       out.push(`    ${amber("[ ]")} ${o.probe.question}`);
       const expected = Array.isArray(o.probe.expect) ? o.probe.expect.join(", ") : o.probe.expect;

@@ -1,6 +1,9 @@
 /** Turning a CorpusSource into documents and a navigation surface. */
 import type { CorpusSource, Doc, NavigationSurface } from "../types.js";
 
+export const POINTER_EXTRACTOR = "pointer-block@1";
+export const FILE_TREE_EXTRACTOR = "file-tree@1";
+
 const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/;
 
 /** Deliberately not a YAML parser. Scalars are all the contracts need. */
@@ -48,6 +51,30 @@ function referencesInLine(indexId: string, line: string): Set<string> {
   return refs;
 }
 
+function pointerBlocks(indexId: string, body: string): { text: string; refs: Set<string> }[] {
+  const lines = body.split(/\r?\n/);
+  const blocks: { text: string; refs: Set<string> }[] = [];
+  let inFence = false;
+  let heading: string | undefined;
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i] ?? "";
+    if (/^\s*(```|~~~)/.test(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    if (/^#{1,6}\s+/.test(line)) {
+      heading = line;
+      continue;
+    }
+    const refs = referencesInLine(indexId, line);
+    if (!refs.size) continue;
+    const text = [heading, line].filter(Boolean).join("\n");
+    blocks.push({ text, refs });
+  }
+  return blocks;
+}
+
 export async function loadDocs(source: CorpusSource): Promise<Doc[]> {
   const ids = await source.list();
   return Promise.all(ids.map(async (id) => {
@@ -73,22 +100,15 @@ export async function buildSurface(
   if (!indexId) {
     return {
       kind: "implicit",
+      extractor: FILE_TREE_EXTRACTOR,
       entries: docs.map((d) => ({ docId: d.id, text: d.id.replace(/[/_-]/g, " ") })),
     };
   }
 
   const { body } = splitFrontmatter(await source.read(indexId));
-  const lines = body.split(/\r?\n/);
-  let inFence = false;
-  const references = lines.map((line) => {
-    if (/^\s*(```|~~~)/.test(line)) {
-      inFence = !inFence;
-      return { line, refs: new Set<string>() };
-    }
-    return { line, refs: inFence ? new Set<string>() : referencesInLine(indexId, line) };
-  });
+  const pointers = pointerBlocks(indexId, body);
   const entries = docs.map((doc) => {
-    const hit = references.filter(({ refs }) => refs.has(doc.id)).map(({ line }) => line);
+    const hit = pointers.filter(({ refs }) => refs.has(doc.id)).map(({ text }) => text);
     return { docId: doc.id, text: hit.length ? hit.join(" ") : "" };
   });
 
@@ -98,8 +118,9 @@ export async function buildSurface(
   if (entries.every((e) => e.text === "")) {
     return {
       kind: "implicit",
+      extractor: FILE_TREE_EXTRACTOR,
       entries: docs.map((d) => ({ docId: d.id, text: d.id.replace(/[/_-]/g, " ") })),
     };
   }
-  return { kind: "explicit", source: indexId, entries };
+  return { kind: "explicit", source: indexId, extractor: POINTER_EXTRACTOR, entries };
 }
