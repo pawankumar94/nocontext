@@ -51,7 +51,7 @@ exactly what that means, so you can decide if it's useful to you today.
 | **What works** | A CLI that scores a real corpus against real questions, with lexical (BM25) and optional local semantic (MiniLM) retrieval, diagnose/evaluate modes, and before/after comparison. [38 tests](.github/workflows/ci.yml) passing. |
 | **What's proven** | On a corpus built to isolate the effect: rewriting a navigation surface in retrieval-friendly vocabulary measurably improves routing, same documents, same questions. [`examples/`](examples/) is the controlled experiment — rerun it yourself. |
 | **What's *not* proven yet** | That a better `nocontext` score causes an agent to actually ground more answers, or explore less, on real tasks. That's [Phase 4](PLANNER.md#phase-4--prove-the-score-predicts-something-real) — a preregistered study, not started. Treat every score today as a routing diagnostic, not a validated agent-performance predictor. |
-| **Coding-agent integrations** | **None exist yet.** No MCP server, no Cursor/Codex/Claude Code/Hermes plugin, no GitHub Action, no npm package. `nocontext` is a CLI you clone, build, and run by hand. See [Integrations](#integrations) for exactly what's planned and why none of it ships today. |
+| **Coding-agent integrations** | **`SKILL.md` in progress** (Claude Code, Cursor, Codex, Hermes — see [Integrations](#integrations)). No MCP server, GitHub Action, or npm package yet; those are gated on Phase 4. Until the skill lands, `nocontext` is a CLI you clone, build, and run by hand. |
 
 If you want a tool that plugs into your coding agent right now, this isn't
 that yet. If you want to measure whether your `AGENTS.md` actually routes the
@@ -134,23 +134,29 @@ the full reasoning and why the base install audits clean.
 
 ## Integrations
 
-None of the below exist today. This table is the plan, not a feature list —
-see [Roadmap to v1](#roadmap-to-v1) for what has to happen first.
+This table is the plan. Only the skill is unblocked today — see
+[Roadmap to v1](#roadmap-to-v1) for why the rest waits on Phase 4.
 
 | surface | target clients | status |
 |---|---|---|
-| MCP server | Claude Code, Cursor, Codex, any MCP-capable client | not started — Phase 5 |
-| Agent skill | clients with skill/tool support (Claude Code, others) | not started — Phase 5 |
-| GitHub Action | CI, any repo | not started — Phase 5 |
-| npm package | `npx nocontext` anywhere | not started — Phase 5 |
-| Hermes Agent | file-aware context model | not evaluated |
+| Agent skill (`SKILL.md`) | Claude Code, Cursor, Codex, Hermes | **in progress — not gated on Phase 4** |
+| MCP server | Claude Code, Cursor, Codex, any MCP-capable client | not started — Phase 5, gated on Phase 4 |
+| GitHub Action | CI, any repo | not started — Phase 5, gated on Phase 4 |
+| npm package | `npx nocontext` anywhere | not started — Phase 5, gated on Phase 4 |
 
-Why none of this ships yet: every integration surface is a thin adapter over
-one function, `analyze(source, options)` — see
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — so building them isn't the
-blocker. Shipping them before Phase 4 tests whether a better score actually
-helps an agent would mean distributing a claim we haven't tested, into tools
-people trust for real work. See [Roadmap to v1](#roadmap-to-v1).
+Most of this is gated on Phase 4, not on engineering effort — every surface
+above is a thin adapter over one function, `analyze(source, options)`, per
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Shipping the MCP server, the
+Action, or the npm package before Phase 4 tests whether a better score
+actually helps an agent would mean distributing an unproven claim into tools
+people trust for real work.
+
+**The skill is the one exception**, and deliberately so: it makes no claim
+about agent grounding. It runs the existing CLI via `Bash` and shows the
+score — a measurement, not a promise about what the measurement means. Cursor
+documents loading skills from Claude and Codex directories, and Hermes Agent
+independently documents support for the same `SKILL.md` format, so one file
+reaches four clients. See [Roadmap to v1](#roadmap-to-v1).
 
 ## How scoring works
 
@@ -192,8 +198,11 @@ Full detail, evidence requirements, and kill criteria per phase: [`PLANNER.md`](
       exploration cost on real tasks. Preregistered, not started. **This is
       the phase that decides what v1 is allowed to claim**, and it's
       explicitly allowed to fail — see the kill criterion in `PLANNER.md`.
-- [ ] **Phase 5** — MCP server, GitHub Action, skill manifest, npm publish.
-      Gated on Phase 4, not on engineering effort.
+- [~] **Agent skill** — `SKILL.md`, unblocked, running in parallel with
+      Phase 3/4. Doesn't need Phase 4 because it makes no grounding claim,
+      just runs the CLI and shows the score.
+- [ ] **Phase 5** — MCP server, GitHub Action, npm publish. Gated on Phase 4,
+      not on engineering effort.
 
 There is no committed date. Phase 4 is a real empirical study, not a task
 with a fixed size, and its outcome determines whether v1 ships as "measures

@@ -483,26 +483,83 @@ before Phase 4, rather than invented after seeing its result.
 **Only past this gate does any output get called a "finding" or a "benchmark"
 in public.**
 
+### The skill — parallel, not gated on Phase 4
+
+Unlike everything else in Phase 5, **a `SKILL.md` at the repo root does not
+need to wait.** It needs no MCP server: a skill can tell an agent to invoke
+the existing CLI directly via `Bash`, and that CLI already works. Confirmed
+before committing to this: Cursor's own docs state it "also loads skills from
+Claude and Codex directories," and Hermes Agent independently documents
+support for the identical `SKILL.md` format. One file, four target clients,
+zero dependency on Phase 4's outcome, because the skill doesn't claim
+anything about agent grounding — it just runs the tool and shows the score.
+
+**Build, can start now:**
+
+- [ ] `SKILL.md` at repo root — frontmatter (`name`, `description`,
+      `allowed-tools: Bash`), body teaches an agent to run
+      `node dist/surfaces/cli.js` (or `nocontext` once published) against a
+      corpus and read the output, including when to use `--diagnose` vs.
+      `--evaluate`
+- [ ] `.claude-plugin/plugin.json` — optional, adds version/author metadata;
+      auto-discovery works without it
+- [ ] Verify auto-discovery actually loads it: no `skills/` directory, no
+      manifest `skills` field, single `SKILL.md` at root per the documented
+      Claude Code convention
+
+**Evidence required:**
+
+| required | how to check |
+|---|---|
+| Loads in at least 2 of {Claude Code, Cursor, Codex, Hermes} without edits | manual load test in each |
+| An agent given only the skill (no prior conversation context) runs the tool correctly on a real corpus | fresh session test |
+| The skill never claims the score predicts agent grounding | re-read against Phase 4's actual status before every edit |
+
 ### Phase 5 — Make it reach people
 
-Only starts if Phase 4 passes.
+Everything below **except the skill above** is gated on Phase 4 passing,
+because each of these distributes the tool at a scale where an unproven claim
+does real damage if wrong.
 
 **Build:**
 
 - [ ] `action/` — GitHub Action, PR annotations, `--fail-under` gate
 - [ ] `src/surfaces/mcp.ts` — MCP server: a `CorpusSource` plus a formatter,
-      nothing more, per `docs/ARCHITECTURE.md`. Claude Code, Codex, Cursor,
-      Windsurf.
-- [ ] `skill/` — agent skill manifest so agents self-check corpora they author
-- [ ] Publish to npm so `npx nocontext` works
+      nothing more, per `docs/ARCHITECTURE.md`
+- [ ] Publish `nocontext` (CLI/library) to npm, unscoped — confirmed
+      available. Ship the MCP server as a **separate** package, `nocontext-mcp`
+      (also confirmed available), matching the ecosystem's `<name>-mcp`
+      convention rather than bundling it into the base install — the base
+      package must stay dependency-light and clean of the semantic
+      retriever's optional peer dependency, per the packaging fix already
+      shipped
+- [ ] Publish the MCP server to the **official registry**
+      (`registry.modelcontextprotocol.io`) first — publish the npm package,
+      create `server.json`, prove namespace ownership via GitHub
+      (`io.github.pawankumar94/nocontext`), run `mcp-publisher publish`. Do
+      this before chasing discovery directories: most of them crawl the
+      official registry, so being absent from it makes directory presence
+      close to moot
+- [ ] After the official registry: let mcp.so, Smithery, and Glama pick it up
+      via crawl, or claim directly if faster. These are discovery layers, not
+      the source of truth
+- [ ] Submit the skill to a **curated** skill registry, not an open one.
+      Checked the landscape: SkillsBench found an average quality score of
+      6.2/12 across 47k public skills, and independent security research
+      found prompt injection in 36% of tested skills. A hardened,
+      human-curated registry (e.g. `tech-leads-club/agent-skills`, which runs
+      static analysis and content-hash lockfiles) fits this project's
+      methodology-first posture; a raw open-marketplace scrape does not
 
 **Evidence required:**
 
 | required | how to check |
 |---|---|
 | MCP server works unmodified in at least 2 of {Claude Code, Codex, Cursor, Windsurf} | manual integration test in each |
+| MCP server listed in the official registry, verified by querying it directly | `mcp-publisher` output plus a registry API lookup, not just "publish succeeded" |
 | GitHub Action produces a correct PR annotation on a real PR that changes docs | dogfood on this repo or a volunteer's |
 | `npx nocontext ./docs` works from a machine that has never touched this repo | ask someone else to try it |
+| Base `nocontext` npm install still audits clean after the MCP server ships as a separate package | rerun the consumer-audit CI check, don't assume separation held |
 
 **Success criterion:** a stranger can adopt one distribution surface without
 reading `PLANNER.md`, `METHOD.md`, or asking a question.
@@ -515,12 +572,15 @@ reading `PLANNER.md`, `METHOD.md`, or asking a question.
 | CLI | `node dist/surfaces/cli.js ./docs` (→ `npx nocontext` later) | phase 2 — done |
 | Anti-gaming | direct leakage detection + held-out evaluation workflow | phase 3 — in progress |
 | **The finding** | **published paired effect on grounding and exploration cost, plus predictive correlation** | **phase 4 — not started, the actual deliverable** |
-| GitHub Action | fails a build when findability drops | phase 5 |
-| MCP server | one config line, works in any MCP client | phase 5 |
-| Agent skill | agents self-check corpora they write | phase 5 |
+| GitHub Action | fails a build when findability drops | phase 5, gated on phase 4 |
+| MCP server | published to the official MCP registry, works in any MCP client | phase 5, gated on phase 4 |
+| **Agent skill** | **`SKILL.md`, cross-loads in Claude Code, Cursor, Codex, Hermes** | **not gated — can start now, runs the CLI directly** |
 
-The finding in Phase 4 is the actual deliverable. Every surface in Phase 5 is
-a way to act on it, and none of them are worth building if Phase 4 fails.
+The finding in Phase 4 is the actual deliverable. Every surface in Phase 5
+except the skill is a way to act on that finding, and none of them are worth
+building if Phase 4 fails. The skill is the one exception: it makes no claim
+about agent grounding, only runs the measurement, so it doesn't need Phase 4
+to be honest.
 
 The pilot rules out "nocontext makes every agent smarter" as the claim. Phase
 4 has to show whether navigation changes grounding, exploration cost, or
