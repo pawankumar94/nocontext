@@ -16,16 +16,21 @@ async function route(
   probes: Probe[],
   candidates: { docId: string; text: string }[],
 ): Promise<Outcome[]> {
-  return Promise.all(probes.map(async (probe) => {
-    const ranked = await retriever.rank(probe.question, candidates);
-    const at = ranked.indexOf(probe.expect);
+  const rankings = retriever.rankMany
+    ? await retriever.rankMany(probes.map((probe) => probe.question), candidates)
+    : await Promise.all(probes.map((probe) => retriever.rank(probe.question, candidates)));
+  return probes.map((probe, index) => {
+    const ranked = rankings[index] ?? [];
+    const expected = Array.isArray(probe.expect) ? probe.expect : [probe.expect];
+    const positions = expected.map((docId) => ranked.indexOf(docId)).filter((at) => at >= 0);
+    const at = positions.length ? Math.min(...positions) : -1;
     return {
       probe,
       picked: ranked[0] ?? null,
       rank: at === -1 ? null : at + 1,
-      hit: ranked[0] === probe.expect,
+      hit: ranked[0] !== undefined && expected.includes(ranked[0]),
     };
-  }));
+  });
 }
 
 function metrics(outcomes: Outcome[]): RankMetrics {

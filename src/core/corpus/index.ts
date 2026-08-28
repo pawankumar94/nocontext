@@ -22,6 +22,32 @@ function titleOf(meta: Record<string, unknown>, body: string, id: string): strin
   return id.replace(/\.md$/i, "").split("/").pop() ?? id;
 }
 
+function resolveReference(fromFile: string, reference: string): string | undefined {
+  const parts = fromFile.split("/").slice(0, -1);
+  for (const part of reference.replace(/^\.\//, "").split("/")) {
+    if (!part || part === ".") continue;
+    if (part === "..") {
+      if (!parts.length) return undefined;
+      parts.pop();
+    } else {
+      parts.push(part);
+    }
+  }
+  return parts.join("/");
+}
+
+function referencesInLine(indexId: string, line: string): Set<string> {
+  const refs = new Set<string>();
+  const pathPattern = /(?:\.\.\/|\.\/)*[A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)*\.md\b/gi;
+  for (const match of line.matchAll(pathPattern)) {
+    const raw = match[0];
+    if (!raw) continue;
+    const resolved = resolveReference(indexId, raw);
+    if (resolved) refs.add(resolved);
+  }
+  return refs;
+}
+
 export async function loadDocs(source: CorpusSource): Promise<Doc[]> {
   const ids = await source.list();
   return Promise.all(ids.map(async (id) => {
@@ -53,9 +79,16 @@ export async function buildSurface(
 
   const { body } = splitFrontmatter(await source.read(indexId));
   const lines = body.split(/\r?\n/);
+  let inFence = false;
+  const references = lines.map((line) => {
+    if (/^\s*(```|~~~)/.test(line)) {
+      inFence = !inFence;
+      return { line, refs: new Set<string>() };
+    }
+    return { line, refs: inFence ? new Set<string>() : referencesInLine(indexId, line) };
+  });
   const entries = docs.map((doc) => {
-    const target = doc.id.split("/").pop() ?? doc.id;
-    const hit = lines.filter((l) => l.includes(doc.id) || l.includes(target));
+    const hit = references.filter(({ refs }) => refs.has(doc.id)).map(({ line }) => line);
     return { docId: doc.id, text: hit.length ? hit.join(" ") : "" };
   });
 

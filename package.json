@@ -11,15 +11,22 @@
   "files": [
     "dist",
     "README.md",
-    "docs/METHOD.md"
+    "AGENTS.md",
+    "PLANNER.md",
+    "CONTRIBUTING.md",
+    "docs/ARCHITECTURE.md",
+    "docs/METHOD.md",
+    "docs/PROBES.md"
   ],
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc -p tsconfig.build.json",
     "dev": "tsc -p tsconfig.json --watch",
-    "test": "npm run build && node --test dist/**/*.test.js",
+    "prepack": "npm run build",
+    "test": "npm run clean && tsc -p tsconfig.json && node --test dist/**/*.test.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "examples": "python3 examples/build.py"
   },
@@ -43,6 +50,11 @@
     "@types/node": "^22.10.2",
     "typescript": "^5.7.2"
   },
+  "overrides": {
+    "adm-zip": "0.6.0",
+    "onnxruntime-node": "1.29.0",
+    "sharp": "0.35.4"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -52,5 +64,8 @@
       "types": "./dist/sources/filesystem.d.ts",
       "import": "./dist/sources/filesystem.js"
     }
+  },
+  "dependencies": {
+    "@huggingface/transformers": "4.2.0"
   }
 }

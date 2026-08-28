@@ -66,6 +66,7 @@ export function bm25(
 
 export const lexical: Retriever = {
   name: "bm25",
+  family: "lexical",
   version: "1.0.0",
   async rank(query, candidates) {
     // A zero score is no evidence at all. Returning an arbitrary ordering of

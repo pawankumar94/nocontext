@@ -1,39 +1,77 @@
 /** Terminal output. Formatting only, no measurement. */
-import { reachableGap, ungroundedRate, type Run } from "../core/types.js";
+import { reachableGap, routingMissRate, type Measurement, type Run } from "../core/types.js";
+import type { RunComparison } from "../core/comparison.js";
 
 const pct = (n: number) => `${(n * 100).toFixed(0)}%`;
 const pad = (s: string, n: number) => s.padEnd(n);
 
-export function renderText(run: Run, color = true): string {
+export function renderText(run: Run, color = true, comparison?: RunComparison): string {
   const c = (code: string, s: string) => (color ? `\x1b[${code}m${s}\x1b[0m` : s);
   const dim = (s: string) => c("2", s);
   const amber = (s: string) => c("33", s);
 
-  const m = run.lexical;
-  const out: string[] = [""];
+  const surface = run.surfaceSource ?? "file tree (no navigation file found)";
+  const out: string[] = [
+    "",
+    `  ${run.mode} run · surface: ${surface}`,
+    `  corpus: ${run.corpus.docs} documents · described by surface: ${run.surfaceCoverage.described}`,
+  ];
 
-  out.push(`  ${amber(pad("ungrounded rate", 22))}${pct(ungroundedRate(m))}${dim("  (1 - P@1)")}`);
-  out.push("");
-  out.push(`  ${dim(pad("", 22))}${pad("P@1", 8)}${pad("MRR", 8)}${pad("R@3", 8)}R@5`);
-  out.push(`  ${dim(pad("floor (random)", 22))}${pad(pct(m.floor.p1), 8)}${pad(m.floor.mrr.toFixed(2), 8)}${pad(pct(m.floor.recall.at3), 8)}${pct(m.floor.recall.at5)}`);
-  out.push(`  ${dim(pad("observed (index)", 22))}${pad(pct(m.observed.p1), 8)}${pad(m.observed.mrr.toFixed(2), 8)}${pad(pct(m.observed.recall.at3), 8)}${pct(m.observed.recall.at5)}${dim(run.surface === "implicit" ? "  file tree, no index" : "")}`);
-  out.push(`  ${dim(pad("ceiling (full text)", 22))}${pad(pct(m.ceiling.p1), 8)}${pad(m.ceiling.mrr.toFixed(2), 8)}${pad(pct(m.ceiling.recall.at3), 8)}${pct(m.ceiling.recall.at5)}`);
-  out.push("");
+  const addMeasurement = (label: string, m: Measurement) => {
+    out.push(`  ${label}  ${dim(m.retriever)}`);
+    out.push(`  ${amber(pad("top-1 routing miss", 22))}${pct(routingMissRate(m))}${dim("  (1 - P@1)")}`);
+    out.push("");
+    out.push(`  ${dim(pad("", 22))}${pad("P@1", 8)}${pad("MRR", 8)}${pad("R@3", 8)}R@5`);
+    out.push(`  ${dim(pad("floor (random)", 22))}${pad(pct(m.floor.p1), 8)}${pad(m.floor.mrr.toFixed(2), 8)}${pad(pct(m.floor.recall.at3), 8)}${pct(m.floor.recall.at5)}`);
+    out.push(`  ${dim(pad("observed (index)", 22))}${pad(pct(m.observed.p1), 8)}${pad(m.observed.mrr.toFixed(2), 8)}${pad(pct(m.observed.recall.at3), 8)}${pct(m.observed.recall.at5)}${dim(run.surface === "implicit" ? "  file tree, no index" : "")}`);
+    out.push(`  ${dim(pad("ceiling (full text)", 22))}${pad(pct(m.ceiling.p1), 8)}${pad(m.ceiling.mrr.toFixed(2), 8)}${pad(pct(m.ceiling.recall.at3), 8)}${pct(m.ceiling.recall.at5)}`);
+    out.push("");
+  };
 
-  const gap = reachableGap(m);
-  out.push(gap > 0.01
-    ? `  ${Math.round(gap * 100)} points of your own information is not reachable from your index.`
-    : `  Your index exposes everything the corpus can answer.`);
+  addMeasurement("lexical", run.lexical);
+  if (run.semantic) addMeasurement("semantic", run.semantic);
 
-  const missed = m.outcomes.filter((o) => !o.hit);
+  const addGap = (label: string, measurement: Measurement) => {
+    const gap = reachableGap(measurement);
+    out.push(gap > 0.01
+      ? `  ${label} reachable gap: ${Math.round(gap * 100)} points.`
+      : `  ${label} reachable gap: 0 points.`);
+  };
+  addGap("lexical", run.lexical);
+  if (run.semantic) addGap("semantic", run.semantic);
+
+  const missed = run.lexical.outcomes.filter((o) => !o.hit);
   if (missed.length) {
     out.push("");
     out.push(`  ${dim("unreachable")}`);
     for (const o of missed.slice(0, 8)) {
       out.push(`    ${amber("[ ]")} ${o.probe.question}`);
-      out.push(`        ${dim(`answer is in ${o.probe.expect}`)}`);
+      const expected = Array.isArray(o.probe.expect) ? o.probe.expect.join(", ") : o.probe.expect;
+      out.push(`        ${dim(`answer is in ${expected}`)}`);
     }
     if (missed.length > 8) out.push(`    ${dim(`and ${missed.length - 8} more`)}`);
+  }
+
+  if (run.findings.length) {
+    out.push("");
+    out.push(`  ${dim("miss diagnosis and navigation edits to test")}`);
+    for (const finding of run.findings.slice(0, 8)) {
+      out.push(`    ${amber("[ ]")} ${finding.expected.join(", ")}`);
+      out.push(`        ${finding.question}`);
+      out.push(`        ${dim(finding.kind.replace(/-/g, " "))}`);
+      const lexicalRank = finding.lexical.rank === null ? "not ranked" : `expected rank ${finding.lexical.rank}`;
+      out.push(`        ${dim(`lexical picked ${finding.lexical.picked ?? "nothing"}; ${lexicalRank}`)}`);
+      if (finding.semantic) {
+        const semanticRank = finding.semantic.rank === null
+          ? "not ranked"
+          : `expected rank ${finding.semantic.rank}`;
+        out.push(`        ${dim(`semantic picked ${finding.semantic.picked ?? "nothing"}; ${semanticRank}`)}`);
+      }
+      out.push(`        ${dim(finding.missingTerms.length
+        ? `terms present in the source but missing from its entry: ${finding.missingTerms.join(", ")}`
+        : "no source-grounded query terms to add; inspect the entry and gold document manually")}`);
+    }
+    if (run.findings.length > 8) out.push(`    ${dim(`and ${run.findings.length - 8} more`)}`);
   }
 
   for (const w of run.warnings) {
@@ -41,8 +79,21 @@ export function renderText(run: Run, color = true): string {
     out.push(`  ${amber("!")} ${w.note}`);
   }
 
+  if (comparison) {
+    out.push("");
+    if (!comparison.compatible) {
+      out.push(`  ${amber("!")} baseline is not comparable: ${comparison.errors.join("; ")}`);
+    } else {
+      const signedPct = (value: number) => `${value >= 0 ? "+" : ""}${(value * 100).toFixed(0)} points`;
+      out.push(`  ${dim("held-out change from baseline")}`);
+      out.push(`    lexical P@1 ${signedPct(comparison.lexical!.p1)}`);
+      if (comparison.semantic) out.push(`    semantic P@1 ${signedPct(comparison.semantic.p1)}`);
+    }
+  }
+
   out.push("");
-  out.push(`  ${dim(`${m.retriever} · ${m.outcomes.length} probes`)}`);
+  const retrievers = [run.lexical.retriever, run.semantic?.retriever].filter(Boolean).join(" + ");
+  out.push(`  ${dim(`${retrievers} · ${run.lexical.outcomes.length} probes`)}`);
   out.push("");
   return out.join("\n");
 }

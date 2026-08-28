@@ -39,18 +39,27 @@ export interface NavigationSurface {
  */
 export interface Probe {
   question: string;
-  /** The document that actually answers it. */
-  expect: string;
+  /** One or more documents that actually answer it. */
+  expect: string | string[];
   origin: "supplied" | "generated" | "fixture";
 }
 
 /** Anything that picks a document given a query. */
 export interface Retriever {
   readonly name: string;
+  /** Determines the output channel. Families are never blended. */
+  readonly family: "lexical" | "semantic";
   /** Stable across releases so published results stay comparable. */
   readonly version: string;
   /** Ranked document ids, best first. */
   rank(query: string, candidates: { docId: string; text: string }[]): Promise<string[]>;
+  /** Optional batch path for retrievers where one model call per probe is wasteful. */
+  rankMany?(
+    queries: string[],
+    candidates: { docId: string; text: string }[],
+  ): Promise<string[][]>;
+  /** Optional retrievers may fail without taking down the free lexical run. */
+  readonly optional?: boolean;
 }
 
 /**
@@ -107,29 +116,48 @@ export interface Measurement {
 /**
  * A complete run.
  *
- * Both retrievers are required. Reporting one alone is how keyword stuffing
- * goes undetected: a stuffed index scores high lexically and flat semantically,
- * so the divergence between them is the entire cheat detector.
+ * Retriever results are separate. They answer different questions and must
+ * never be averaged into a private scale.
  */
 export interface Run {
-  corpus: { root: string; docs: number };
+  corpus: { root: string; docs: number; fingerprint: string };
+  /** Diagnose may propose edits. Evaluate is held-out and never does. */
+  mode: "diagnose" | "evaluate";
   surface: NavigationSurface["kind"];
+  /** Exact navigation file scored. Absent means the file tree was scored. */
+  surfaceSource?: string;
+  surfaceCoverage: { described: number; total: number };
   probes: { supplied: number; generated: number; fixture: number };
   lexical: Measurement;
-  semantic: Measurement;
+  semantic?: Measurement;
+  findings: Finding[];
   warnings: Warning[];
   /** True when probe count is too low for the result to mean much. */
   lowConfidence: boolean;
 }
 
-export type Warning =
-  | { kind: "keyword-stuffing"; lexicalLead: number; note: string }
-  | { kind: "low-ceiling"; ceiling: number; note: string }
-  | { kind: "implicit-index"; note: string }
-  | { kind: "low-probe-count"; probes: number; note: string };
+export interface Finding {
+  kind: "lexical-vocabulary-gap" | "shared-navigation-gap" | "retriever-disagreement";
+  question: string;
+  expected: string[];
+  lexical: { picked: string | null; rank: number | null };
+  semantic?: { picked: string | null; rank: number | null };
+  /** Query terms grounded in the expected body but absent from its surface entry. */
+  missingTerms: string[];
+}
 
-/** Ungrounded rate is derived, never stored, so it can never drift from its inputs. */
-export function ungroundedRate(m: Measurement): number {
+export type Warning =
+  | { kind: "development-run"; note: string }
+  | { kind: "probe-leakage"; probes: number; note: string }
+  | { kind: "low-ceiling"; retriever: string; ceiling: number; note: string }
+  | { kind: "implicit-index"; note: string }
+  | { kind: "sparse-surface"; described: number; total: number; note: string }
+  | { kind: "low-probe-count"; probes: number; note: string }
+  | { kind: "invalid-probes"; errors: string[]; note: string }
+  | { kind: "retriever-unavailable"; retriever: string; note: string };
+
+/** Top-one routing misses. This is a retriever metric, not observed agent grounding. */
+export function routingMissRate(m: Measurement): number {
   return 1 - m.observed.p1;
 }
 
@@ -166,10 +194,10 @@ export interface CorpusSource {
 export interface AnalyzeOptions {
   /** Real queries beat generated ones. See METHOD.md. */
   probes?: Probe[];
-  /** Defaults to lexical only, which needs no network and no key. */
+  /** Defaults to evaluate so an ordinary run cannot masquerade as held-out evidence. */
+  mode?: "diagnose" | "evaluate";
+  /** Defaults to lexical. Surfaces inject optional I/O-backed retrievers. */
   retrievers?: Retriever[];
-  /** Probes generated per document when none are supplied. */
-  probesPerDoc?: number;
   /** Progress for long runs. Surfaces decide how to display it, core never prints. */
   onProgress?: (event: { phase: string; done: number; total: number }) => void;
 }
