@@ -9,6 +9,19 @@
   This tells you how many.</em>
 </p>
 
+<p align="center">
+  <a href="docs/METHOD.md"><img alt="method: published first" src="https://img.shields.io/badge/method-published%20before%20results-E07B39"></a>
+  <img alt="status: pre-alpha" src="https://img.shields.io/badge/status-pre--alpha-9AA0A6">
+  <img alt="license: MIT" src="https://img.shields.io/badge/license-MIT-9AA0A6">
+</p>
+
+> **Pre-alpha. The CLI does not run yet.**
+> The methodology is settled and published, the example corpora are built, and
+> the implementation is being written against both. The output below is the
+> shape of the finished tool, not a recording of a real run. Nothing here
+> reports a number yet, deliberately: `docs/METHOD.md` went in first so that
+> the method could not be shaped to fit a result.
+
 ---
 
 Your docs lint clean. Your frontmatter is complete. Your wiki is valid.
@@ -19,7 +32,7 @@ does not error. It answers anyway, from memory, with no source behind it, and
 nothing in any log records that it happened.
 
 ```
-$ npx nocontext ./docs
+$ npx nocontext ./docs          # intended output, not yet runnable
 
   ungrounded rate        43%
 
@@ -35,11 +48,20 @@ does not expose it.
 
 ## Install
 
+Not published yet. When it is:
+
 ```bash
 npx nocontext ./docs
 ```
 
 No install, no config, no API key for the default run.
+
+To follow along now, clone it and run the tests:
+
+```bash
+git clone https://github.com/pawankumar94/nocontext && cd nocontext
+npm ci && npm test
+```
 
 ## Why three numbers
 
@@ -73,8 +95,34 @@ the two are reported separately and never averaged. **A stuffed index scores
 high lexically and flat semantically.** That divergence is reported as a
 warning, not as a good score.
 
-`examples/stuffed/` is a corpus built specifically to cheat. If a change to this
+`examples/stuffed-index/` is a corpus built specifically to cheat. If a change to this
 tool ever lets it pass clean, the change is wrong.
+
+## The examples are a controlled experiment
+
+`examples/` holds four corpora with **byte-identical documents and byte-identical
+probes**. The only thing that varies is the navigation surface, so any
+difference in score between them is caused by the index and nothing else.
+
+| variant | surface | what it is |
+|---|---|---|
+| `human-index` | `index.md` | reads well to a person, routes badly |
+| `retrieval-index` | `index.md` | same docs, indexed in the words people ask in |
+| `stuffed-index` | `index.md` | gamed: probe vocabulary dumped in, describes nothing |
+| `no-index` | file tree | no index, the implicit-surface path |
+
+They are generated from one source rather than maintained by hand, because
+hand-maintained copies drift and drift would void the control without anything
+appearing to break. CI regenerates them and fails if the committed tree has
+moved.
+
+The probes were hand-written before any index existed, phrased the way someone
+asks rather than the way the documents phrase themselves, so no variant is
+favoured.
+
+A prediction, recorded before the scorer exists: **all four must report the same
+ceiling**, since the documents are identical. If they do not, the implementation
+has a bug and this is how we find out.
 
 ## Method
 
@@ -87,10 +135,6 @@ answers.
 If you find a corpus where `nocontext` is obviously wrong, open an issue with
 the corpus attached. That is the most useful thing anyone can contribute, and
 corrections get made in public.
-
-## Status
-
-Early. The method is settled and the implementation is being built against it.
 
 ## License
 

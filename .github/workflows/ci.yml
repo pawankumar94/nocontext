@@ -1,0 +1,37 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  fixtures:
+    # The example corpora are generated. If a regenerated tree differs from the
+    # committed one, source and variants have drifted and the control is void.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python3 examples/build.py
+      - name: examples must match their source
+        run: |
+          if ! git diff --quiet -- examples/; then
+            echo "examples/ is stale. Run 'python3 examples/build.py' and commit."
+            git diff --stat -- examples/
+            exit 1
+          fi

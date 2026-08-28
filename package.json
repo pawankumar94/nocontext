@@ -3,20 +3,44 @@
   "version": "0.0.0",
   "description": "Measures whether an agent can actually reach the right document in your corpus.",
   "type": "module",
-  "bin": { "nocontext": "./dist/cli.js" },
+  "bin": {
+    "nocontext": "./dist/cli.js"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist", "README.md", "docs/METHOD.md"],
-  "engines": { "node": ">=20" },
+  "files": [
+    "dist",
+    "README.md",
+    "docs/METHOD.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
-    "test": "node --test dist/**/*.test.js",
+    "test": "npm run build && node --test dist/**/*.test.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "examples": "python3 examples/build.py"
   },
-  "keywords": ["ai-agents", "rag", "retrieval", "evaluation", "documentation", "llm", "okf"],
+  "keywords": [
+    "ai-agents",
+    "rag",
+    "retrieval",
+    "evaluation",
+    "documentation",
+    "llm",
+    "okf"
+  ],
   "license": "MIT",
   "author": "Pawan Kumar",
-  "repository": { "type": "git", "url": "git+https://github.com/pawankumar94/nocontext.git" },
-  "homepage": "https://github.com/pawankumar94/nocontext#readme"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pawankumar94/nocontext.git"
+  },
+  "homepage": "https://github.com/pawankumar94/nocontext#readme",
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
 }
