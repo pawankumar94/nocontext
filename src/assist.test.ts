@@ -118,3 +118,32 @@ test("supplying --questions opts out of assist mode and topic generation", async
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("a document with no pointer anywhere is reported as unlinked, not as a wording suggestion", async () => {
+  // Regression test for a real bug: missingTerms is computed for every miss
+  // regardless of finding kind, so checking it before finding.kind buried a
+  // genuine coverage gap behind a word-list suggestion almost every time.
+  // See docs/METHOD.md, "What actually moved" — coverage gaps are the one
+  // thing this tool has real agent evidence for; wording is not, and must
+  // never be presented with equal confidence.
+  const dir = await mkdtemp(join(tmpdir(), "nocontext-coverage-"));
+  try {
+    await mkdir(join(dir, "docs"));
+    await writeFile(join(dir, "docs", "deploy.md"),
+      "# Deployment policy\n\nMigrations run before the app deploy.\n");
+    await writeFile(join(dir, "docs", "orphan.md"),
+      "# Rollback procedure\n\nRoll back by reverting the last release tag.\n");
+    // index.md links deploy.md only — orphan.md has no pointer anywhere.
+    await writeFile(join(dir, "index.md"),
+      "- [Deployment policy](docs/deploy.md) — what must be true before a rollout\n");
+
+    const { stdout } = await run("node", [CLI, dir, "--no-color"]);
+    assert.match(stdout, /orphan\.md/, "the unlinked document must appear in the miss list at all");
+    assert.match(stdout, /is not linked from/,
+      "a document with no pointer anywhere must be reported as unlinked");
+    assert.doesNotMatch(stdout, /add: rollback|add: procedure/,
+      "a coverage gap must not be demoted to a wording suggestion");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});

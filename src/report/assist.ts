@@ -42,10 +42,17 @@ export function renderAssist(run: Run, questionsPath: string | undefined, color 
     const hit = finding.lexical.picked ?? "nothing";
     out.push(`  ${amber("[ ]")} "${finding.question}"`);
     out.push(`      hit ${hit}, gold is ${finding.expected.join(" or ")}`);
-    if (finding.missingTerms.length) {
-      out.push(`      ${dim(`add: ${finding.missingTerms.join(", ")}`)}`);
-    } else if (finding.kind === "shared-navigation-gap") {
-      out.push(`      ${dim("not linked anywhere in the surface — add a pointer, not just words")}`);
+    // Coverage first, always — a document with no pointer at all is the one
+    // gap this tool has real agent evidence for (validation/phase4b/). A
+    // vocabulary suggestion is not: rewriting wording changed nothing for a
+    // real capped agent on two of three tested repos. missingTerms is
+    // computed for every miss regardless of kind, so checking it before
+    // finding.kind buried the coverage case behind a word list almost every
+    // time — that ordering bug is why this block is structured kind-first.
+    if (finding.kind === "shared-navigation-gap") {
+      out.push(`      ${amber(`${finding.expected.join(" or ")} is not linked from ${surface}`)}`);
+    } else if (finding.missingTerms.length) {
+      out.push(`      ${dim(`unverified suggestion, wording is not shown to matter: add ${finding.missingTerms.join(", ")}`)}`);
     }
   }
   if (run.findings.length > 10) out.push(`  ${dim(`and ${run.findings.length - 10} more`)}`);

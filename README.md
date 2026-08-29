@@ -3,7 +3,7 @@
 </p>
 
 <h1 align="center">nocontext</h1>
-<p align="center"><strong>A retrieval-quality linter for AGENTS.md, CLAUDE.md, and the docs your coding agent reads before it reads anything else.</strong></p>
+<p align="center"><strong>Finds docs your AGENTS.md, CLAUDE.md, or docs index never points to — not shown to fix wording, only missing pointers.</strong></p>
 
 <p align="center">
   <img alt="status: pre-v1, CLI only" src="https://img.shields.io/badge/status-pre--v1%2C%20CLI%20only-9AA0A6">
@@ -25,21 +25,25 @@
 ## What this is
 
 Coding agents read a map before they read anything else — `AGENTS.md`,
-`CLAUDE.md`, a docs index — to decide which file answers a given question. A
-map can list the right file and still fail to route a real question to it.
+`CLAUDE.md`, a docs index — to decide which file answers a given question.
+Sometimes a document that answers a real question **isn't on the map at
+all**: nothing links to it, so nothing routes there.
 
-You write that map the way you'd explain the project to a colleague: *"what
-must be true before a production rollout."* A contributor asks *"do
-migrations run before or after the deploy?"* If the map's wording doesn't
-route that question to the right file, the agent misses it — sometimes
-silently, sometimes not; see [Project status](#project-status) for what's
-actually proven about that.
+That's the gap this tool has real evidence for. We tested a narrower guess
+too — that *wording* was the problem, that an index phrased like "what must
+be true before a production rollout" loses a contributor asking "do
+migrations run before or after the deploy?" — and on real repos, under a
+real agent working with a real budget, rewriting wording alone **changed
+nothing**. What did change everything, on the one repo where it applied: a
+document with **no pointer anywhere** in the surface, agent grounding went
+from 0% to 100% once it was linked. See [Project status](#project-status)
+for the actual numbers, not the pitch.
 
-`nocontext` finds those mismatches, and it has two modes on purpose:
+`nocontext` finds documents like that, and it has two modes on purpose:
 
 | | command | for | promise |
 |---|---|---|---|
-| **Assist** | `nocontext .` | anyone, no setup | a miss list: what a question hits, what it should hit, which words to add. Never a score. |
+| **Assist** | `nocontext .` | anyone, no setup | a miss list, coverage gaps first: which document has no pointer at all, and separately, an unverified wording suggestion. Never a score. |
 | **Verify** | `nocontext . --questions held-out.json --evaluate` | CI, defensible numbers | the same retrieval metrics published research on agent context-acquisition uses (P@1, MRR, Recall@k — see [How scoring works](#how-scoring-works)) |
 
 Assist mode is the default and needs nothing from you but a repo. Verify mode
@@ -54,8 +58,8 @@ exactly what that means, so you can decide if it's useful to you today.
 | | |
 |---|---|
 | **What works** | Two CLI modes: zero-config assist mode (`nocontext .`, no probes needed, a miss list from mechanical topic checks) and the full verify protocol (lexical + optional local semantic retrieval, diagnose/evaluate, before/after comparison). [43 tests](.github/workflows/ci.yml) passing. |
-| **What's proven** | The effect replicates: rewriting a navigation surface in retrieval-friendly vocabulary measurably improves routing, on a fixture built to show it *and* on three real, unmodified repos nobody selected to prove a point (Codex, NVIDIA NVCF, Vercel AI SDK — [`validation/phase4/`](validation/phase4/), lexical P@1 improved +33 to +83 points on held-out questions). |
-| **What Phase 4b found, narrower than hoped** | Fixing a document that was **never linked anywhere** took a capped real agent's grounding from 0% to 100% on held-out questions, on a real repo. Fixing a document that was **linked but poorly worded** changed nothing, on two separate repos, under the same constraint. This tool is shown to help with missing pointers under a real constraint, not with wording, and not yet under free exploration or real ranked retrieval. Full result: [`validation/phase4b/`](validation/phase4b/), decided in [`docs/METHOD.md`](docs/METHOD.md#what-actually-moved-decided-2026-08-28-after-the-table-existed-not-before). |
+| **What's proven, the actual product claim** | On real repos, under a real agent working with a real budget (3 file reads per question): fixing a document with **no pointer anywhere** in the surface took grounding from 0% to 100%. Fixing a document that was **linked but poorly worded** changed nothing, on two separate repos, under the same constraint — those repos were already at ceiling; a capped agent found the right file regardless of wording. This does not show wording never matters. It shows wording didn't matter *once a pointer existed*. Full result: [`validation/phase4b/`](validation/phase4b/), decided in [`docs/METHOD.md`](docs/METHOD.md#what-actually-moved-decided-2026-08-28-after-the-table-existed-not-before). |
+| **A narrower, upstream result** | Retrieval metrics (not agent behavior) also moved on the same three repos when navigation surfaces were rewritten: lexical P@1 improved +33 to +83 points on held-out questions ([`validation/phase4/`](validation/phase4/)). This is evidence the *metric* is sensitive to real edits, not evidence that an agent grounds more answers because of them — see the row above for what actually happened when a real agent was in the loop. |
 | **Coding-agent integrations** | **`SKILL.md` in progress** (Claude Code, Cursor, Codex, Hermes — see [Integrations](#integrations)). No MCP server, GitHub Action, or npm package yet; those are gated on Phase 4. Until the skill lands, `nocontext` is a CLI you clone, build, and run by hand. |
 
 If you want a tool that plugs into your coding agent right now (an MCP
@@ -76,24 +80,28 @@ node dist/surfaces/cli.js examples/no-index
 $ nocontext examples/no-index
 
   surface   file tree (no navigation file found)  (auto)
-  6 topic probes from doc headings — mechanical, not real questions. See below.
+  6 topic probes from headings — coverage only (is the doc pointed at).
+  Not how a person would ask. Not a score.
   top-1 miss  1/6
 
   [ ] "On-call rotation"
       hit nothing, gold is docs/oncall.md
-      add: on-call, rotation
+      unverified suggestion, wording is not shown to matter: add on-call, rotation
 
-  These are mechanical topic checks, not real questions a person would ask.
-  Review or replace them at examples/no-index/nocontext-topic-probes.json, then get a comparable score with:
-    nocontext . --questions examples/no-index/nocontext-topic-probes.json --evaluate
+  Coverage only, not real questions. For real phrasing, write questions from
+  the doc bodies yourself and pass --questions, or add --write-probes to keep
+  this run's probes for review instead of discarding them.
 ```
 
 That's real, unedited output from a real run — no flags, no probe file you
-had to write first. `nocontext` auto-detected there's no navigation file,
-generated its own mechanical topic probes from the doc headings (never a
-real question, and it says so), and found one: nothing in this corpus routes
-to `docs/oncall.md`. It also wrote those probes to disk so you can read,
-edit, or throw them away.
+had to write first. This particular corpus has no index at all (the file
+tree is the surface), so every document is trivially "linked" and the miss
+here is a wording gap, not the coverage gap this tool has agent evidence
+for — labeled "unverified suggestion" for exactly that reason, not presented
+as a fix. When a document has no pointer anywhere in a real navigation file,
+the output names that directly instead: `path/to/doc.md is not linked from
+AGENTS.md`, no hedge. See [`validation/phase4b/`](validation/phase4b/) for a
+real one, found on an unmodified public repo, not this bundled example.
 
 Not on npm yet. Once it is, this becomes `npx nocontext .`.
 
